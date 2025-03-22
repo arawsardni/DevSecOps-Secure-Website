@@ -80,7 +80,7 @@ INSTALLED_APPS = [
 
     'corsheaders',
 
-    'property',
+    'product',
     'useraccount', 
 ]
 
