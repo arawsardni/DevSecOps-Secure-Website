@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 
 from pathlib import Path
@@ -30,7 +31,7 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": False, 
     "UPDATE_LAST_LOGIN": True,
     "SIGNING_KEY": "acomplexkey",
-    "AL0GRIGTHM": "HS512",
+    "ALGORITHM": "HS512",
 }
 
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
@@ -40,18 +41,18 @@ ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_VERIFICATION = None
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication', 
-    },
-    'DEFAULT_PERMISSION_CLASSES': {
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-    }
+    ]
 }
 
-CORS_ALLOWED_ORIGINS = {
+CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:8000',
     'http://127.0.0.1:3000',
-}
+]
 
 REST_AUTH = {
     "USE_JWT": True,
@@ -68,7 +69,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'restframework',
+    'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
 
