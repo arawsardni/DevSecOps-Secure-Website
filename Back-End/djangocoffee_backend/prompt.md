@@ -209,3 +209,135 @@ Aplikasi shipping telah berhasil dibuat dengan fitur-fitur berikut:
    - Pengelolaan penyedia jasa pengiriman dan metode
 
 Aplikasi shipping dirancang dengan pendekatan fleksibel yang memudahkan integrasi dengan berbagai penyedia jasa pengiriman. Sistem ini mendukung berbagai metode pengiriman, perhitungan tarif berdasarkan berat dan jarak, serta pelacakan status pengiriman secara real-time.
+
+## Aplikasi Core
+
+Aplikasi core telah berhasil dibuat dengan fitur-fitur berikut:
+
+### Model
+
+1. `SiteConfiguration`
+
+   - Menyimpan konfigurasi umum website (singleton)
+   - Informasi dasar situs (nama, logo, favicon, tagline)
+   - Meta informasi untuk SEO (deskripsi, kata kunci)
+   - Kontak dan social media (email, telepon, alamat, FB, IG, Twitter, WA)
+   - Pengaturan operasional (jam buka, minimal order, jarak pengiriman)
+   - Pengaturan tampilan (warna primer, sekunder, aksen)
+   - Teks footer dan copyright
+
+2. `BannerImage`
+
+   - Banner untuk halaman beranda
+   - Mendukung konfigurasi judul, subtitle, dan gambar
+   - Pengaturan posisi, tautan, dan teks tombol
+   - Kontrol periode aktif (tanggal mulai dan berakhir)
+   - Urutan penampilan dan status aktif
+
+3. `ContentBlock`
+
+   - Blok konten dinamis (Tentang Kami, Syarat & Ketentuan, dll)
+   - Mendukung slug untuk URL dan pencarian
+   - Pengaturan lokasi (homepage, about, footer, dll)
+   - Meta informasi untuk SEO
+   - Status aktif dan opsi penampilan (header/footer)
+
+4. `ContactMessage`
+
+   - Menyimpan pesan dari pengunjung website
+   - Informasi pengirim (nama, email, subjek, pesan)
+   - Status pesan (baru, dibaca, dibalas)
+   - Pencatatan balasan dan petugas yang membalas
+   - Metadata (IP address, user agent, timestamp)
+
+5. `FAQ`
+
+   - Pertanyaan yang sering ditanyakan
+   - Pengategorian FAQ (umum, pembayaran, pengiriman, dll)
+   - Status aktif dan urutan penampilan
+   - Pencatatan waktu pembuatan dan pembaruan
+
+6. `Testimonial`
+   - Testimoni dari pelanggan
+   - Informasi pelanggan (nama, posisi, foto)
+   - Konten testimoni dan rating (1-5)
+   - Status aktif dan urutan penampilan
+   - Pencatatan waktu pembuatan dan pembaruan
+
+### API Endpoints
+
+1. Konfigurasi Situs
+
+   - `GET /api/core/config/` - Mendapatkan seluruh konfigurasi situs (admin)
+   - `GET /api/core/config/public/` - Mendapatkan konfigurasi publik situs
+   - `PATCH /api/core/config/update-config/` - Memperbarui konfigurasi situs (admin)
+
+2. Banner
+
+   - `GET /api/core/banners/` - Mendapatkan daftar semua banner (admin)
+   - `GET /api/core/banners/<id>/` - Mendapatkan detail banner (admin)
+   - `GET /api/core/banners/active/` - Mendapatkan banner aktif untuk website
+   - Endpoints CRUD untuk manajemen banner (admin)
+
+3. Content Block
+
+   - `GET /api/core/content/` - Mendapatkan daftar semua content block (admin)
+   - `GET /api/core/content/<id>/` - Mendapatkan detail content block (admin)
+   - `GET /api/core/content/slug/<slug>/` - Mendapatkan content block berdasarkan slug
+   - `GET /api/core/content/location/<location>/` - Mendapatkan content block berdasarkan lokasi
+   - Endpoints CRUD untuk manajemen content block (admin)
+
+4. Contact Message
+
+   - `POST /api/core/contact/` - Mengirim pesan kontak baru (publik)
+   - `GET /api/core/contact/` - Mendapatkan daftar semua pesan kontak (admin)
+   - `GET /api/core/contact/<id>/` - Mendapatkan detail pesan kontak (admin)
+   - `POST /api/core/contact/<id>/reply/` - Membalas pesan kontak (admin)
+   - `POST /api/core/contact/<id>/mark-as-read/` - Menandai pesan sebagai dibaca (admin)
+
+5. FAQ
+
+   - `GET /api/core/faq/` - Mendapatkan daftar semua FAQ (admin)
+   - `GET /api/core/faq/<id>/` - Mendapatkan detail FAQ (admin)
+   - `GET /api/core/faq/public/` - Mendapatkan semua FAQ aktif untuk publik
+   - `GET /api/core/faq/category/<category>/` - Mendapatkan FAQ berdasarkan kategori
+   - Endpoints CRUD untuk manajemen FAQ (admin)
+
+6. Testimonial
+   - `GET /api/core/testimonials/` - Mendapatkan daftar semua testimonial (admin)
+   - `GET /api/core/testimonials/<id>/` - Mendapatkan detail testimonial (admin)
+   - `GET /api/core/testimonials/active/` - Mendapatkan testimonial aktif untuk publik
+   - Endpoints CRUD untuk manajemen testimonial (admin)
+
+### Fitur Utama
+
+1. Konfigurasi Situs
+
+   - Satu konfigurasi sentral untuk seluruh website
+   - Penyesuaian tampilan website (logo, warna, teks)
+   - Pengaturan SEO dan metadata
+
+2. Manajemen Konten
+
+   - Pengelolaan konten statis (about us, syarat & ketentuan)
+   - Banner dinamis untuk promosi dan pengumuman
+   - Editor WYSIWYG untuk konten yang kaya
+
+3. Interaksi Pengunjung
+
+   - Form kontak dengan anti-spam
+   - Pengelolaan pesan dan balasan
+   - Testimonial dari pelanggan
+
+4. FAQ Manager
+
+   - Pengategorian pertanyaan umum
+   - Pengelolaan urutan penampilan FAQ
+   - Pencarian FAQ
+
+5. Integrasi SEO
+   - Meta tags untuk setiap halaman
+   - Pengaturan SEO sentral
+   - Dukungan untuk social media sharing
+
+Aplikasi core dirancang sebagai fondasi website, menyediakan komponen-komponen esensial yang dibutuhkan untuk mengelola tampilan dan konten situs. Dengan pendekatan modular, aplikasi ini memudahkan administrator untuk menyesuaikan tampilan dan konten tanpa perlu melakukan perubahan kode.

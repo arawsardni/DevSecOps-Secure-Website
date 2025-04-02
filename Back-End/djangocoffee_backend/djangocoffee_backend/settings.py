@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     'dj_rest_auth.registration',
 
     'corsheaders',
+    # 'ckeditor',  # Komentar sementara
 
     # Project apps
     'product',
@@ -94,6 +95,15 @@ INSTALLED_APPS = [
     'notification',
     'core',
 ]
+
+# CKEditor Configuration - Komentar sementara
+# CKEDITOR_CONFIGS = {
+#     'default': {
+#         'toolbar': 'full',
+#         'height': 300,
+#         'width': '100%',
+#     },
+# }
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
