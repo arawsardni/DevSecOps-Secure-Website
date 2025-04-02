@@ -291,3 +291,79 @@ Bagus! Sekarang Anda sudah bisa mengakses admin dashboard dengan superuser baru.
    - Melihat total produk
    - Melihat total kategori
    - Mengelola konten website
+
+## Prompt 7
+
+lanjutkan untuk memodifikasi apps cart, sesuai dengan ini
+
+## Answer 7
+
+Saya telah memodifikasi app cart sesuai dengan kebutuhan website kopi Anda. Berikut adalah perubahan yang telah saya buat:
+
+### 1. Model Cart dan CartItem
+
+Saya telah membuat dua model utama:
+
+- **Cart**: Menampung informasi keseluruhan keranjang untuk user atau guest
+- **CartItem**: Menampung detail item dalam keranjang
+
+Model Cart memiliki fitur:
+
+- Support untuk user terotentikasi dan guest (menggunakan session ID)
+- Perhitungan total harga
+- Perhitungan jumlah item
+- Fungsi untuk menghapus semua item
+- Fungsi untuk memindahkan item dari cart guest ke cart user saat login
+
+Model CartItem memiliki fitur:
+
+- Referensi ke produk
+- Kuantitas
+- Ukuran (sesuai dengan SIZE_CHOICES di Product)
+- Instruksi khusus untuk barista
+- Perhitungan total harga per item
+
+### 2. API Endpoint untuk Cart
+
+Saya telah menambahkan endpoint berikut:
+
+- `GET /api/cart/` - Mendapatkan keranjang user saat ini
+- `POST /api/cart/add/` - Menambahkan produk ke keranjang
+- `PUT /api/cart/update/<uuid:item_id>/` - Update kuantitas/instruksi item
+- `DELETE /api/cart/remove/<uuid:item_id>/` - Menghapus item dari keranjang
+- `POST /api/cart/clear/` - Menghapus semua item dari keranjang
+- `POST /api/cart/merge/` - Memindahkan item dari cart guest ke cart user saat login
+
+### 3. Serializer untuk Cart
+
+Saya telah membuat serializer berikut:
+
+- **CartItemSerializer**: Menampilkan detail item dalam keranjang
+- **CartSerializer**: Menampilkan keseluruhan keranjang beserta item-nya
+- **AddToCartSerializer**: Untuk menambahkan item ke keranjang
+- **UpdateCartItemSerializer**: Untuk update item di keranjang
+
+### 4. Admin Panel untuk Cart
+
+Saya telah mengkonfigurasi admin panel untuk:
+
+- Menampilkan daftar keranjang beserta status dan total
+- Menampilkan detail item dalam keranjang
+- Filter keranjang berdasarkan status dan waktu pembuatan
+- Pencarian keranjang berdasarkan user atau session ID
+
+### 5. Unit Testing
+
+Saya telah menambahkan unit test untuk:
+
+- Menambahkan item ke keranjang (guest dan user terotentikasi)
+- Update kuantitas item
+- Menghapus item dari keranjang
+- Menghapus semua item dari keranjang
+
+Semua fitur ini sudah terintegrasi dengan app useraccount dan product yang ada, dan sesuai dengan tujuan website kopi Anda yang memungkinkan:
+
+1. Guest dapat menambahkan item ke keranjang menggunakan session
+2. User terotentikasi dapat mengelola keranjang belanjanya
+3. Keranjang guest dapat dipindahkan ke user saat login/register
+4. Admin dapat melihat dan mengelola keranjang di admin panel

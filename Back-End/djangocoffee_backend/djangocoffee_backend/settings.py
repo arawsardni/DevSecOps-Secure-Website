@@ -82,8 +82,17 @@ INSTALLED_APPS = [
 
     'corsheaders',
 
+    # Project apps
     'product',
-    'useraccount', 
+    'useraccount',
+    'cart',
+    'order',
+    'review',
+    'address',
+    'payment',
+    'shipping',
+    'notification',
+    'core',
 ]
 
 MIDDLEWARE = [
