@@ -509,3 +509,108 @@ Semua fitur ini sudah terintegrasi dengan app useraccount, product, dan cart yan
 3. Admin dapat melacak dan mengelola pesanan
 4. Admin dapat melihat laporan pendapatan dan produk terlaris
 5. Sistem stok diperbarui saat pesanan dibuat atau dibatalkan
+
+## Prompt 10
+
+ok lanjutkan untuk membuat review apps
+
+## Answer 10
+
+Saya telah membuat aplikasi review untuk website kopi Anda. Berikut adalah perubahan yang telah saya buat:
+
+### 1. Model untuk Review
+
+Saya telah membuat beberapa model utama:
+
+- **Review**: Model utama untuk menyimpan ulasan dan rating produk
+- **ReviewLike**: Model untuk menyimpan likes pada ulasan
+- **ReviewImage**: Model untuk menyimpan gambar yang dilampirkan pada ulasan
+
+Model Review memiliki fitur:
+
+- Rating 1-5 untuk produk
+- Komentar detail
+- Status moderasi (disetujui atau belum)
+- Status unggulan (featured review)
+- Jumlah likes
+- Auto-update rating produk saat review baru dibuat
+
+Model ReviewLike:
+
+- Mencatat user yang menyukai review
+- Auto-update jumlah likes pada review
+- Validasi agar satu user hanya bisa like sekali
+
+Model ReviewImage:
+
+- Menyimpan gambar yang dilampirkan pada review
+- Terintegrasi dengan sistem media Django
+
+### 2. API Endpoint untuk Review
+
+Saya telah menambahkan endpoint berikut:
+
+**Untuk Publik**:
+
+- `GET /api/reviews/products/<uuid:product_id>/` - Mendapatkan semua review untuk produk tertentu dengan statistik rating
+
+**Untuk Pengguna Terotentikasi**:
+
+- `POST /api/reviews/create/` - Membuat review baru
+- `GET, PUT, DELETE /api/reviews/<uuid:review_id>/` - Mendapatkan, mengupdate, atau menghapus review milik sendiri
+- `DELETE /api/reviews/images/<uuid:image_id>/delete/` - Menghapus gambar review milik sendiri
+- `POST /api/reviews/<uuid:review_id>/like/` - Menyukai review
+- `DELETE /api/reviews/<uuid:review_id>/unlike/` - Menghapus like dari review
+- `GET /api/reviews/user/` - Mendapatkan semua review yang ditulis oleh user
+
+**Untuk Admin**:
+
+- `GET /api/reviews/admin/all/` - Mendapatkan semua review (dengan filter)
+- `POST /api/reviews/admin/<uuid:review_id>/approve/` - Menyetujui review
+- `POST /api/reviews/admin/<uuid:review_id>/feature/` - Menjadikan review sebagai unggulan
+
+### 3. Serializer untuk Review
+
+- **ReviewSerializer**: Detail lengkap review termasuk info user dan produk
+- **ReviewImageSerializer**: Detail gambar review
+- **CreateReviewSerializer**: Untuk membuat review baru dengan upload gambar
+- **ReviewLikeSerializer**: Untuk menyukai review
+
+### 4. Admin Panel untuk Review
+
+Saya telah mengkonfigurasi admin panel untuk:
+
+- Menampilkan daftar review dengan rating dalam bentuk bintang (★★★★☆)
+- Filter berdasarkan rating, status persetujuan, status unggulan
+- Aksi batch untuk menyetujui, menolak, dan menjadikan review sebagai unggulan
+- Preview gambar review
+- Detail like pada review
+- Tampilan terstruktur dengan fieldsets untuk memudahkan navigasi
+
+### 5. Unit Testing
+
+Saya telah menambahkan unit test untuk:
+
+- Mendapatkan review produk sebagai anonymous user
+- Membuat review baru sebagai user terotentikasi
+- Mencegah review duplikat untuk produk yang sama
+- Update dan delete review milik sendiri
+- Menyukai dan unlike review
+- Fitur admin untuk approve dan feature review
+
+### 6. Integrasi dengan Produk
+
+Review terintegrasi dengan Product model, dengan fitur:
+
+- Auto-update rating produk saat review baru dibuat
+- Tampilan statistik rating (rata-rata, jumlah per bintang)
+- Filter review berdasarkan rating
+
+Semua fitur ini mendukung kebutuhan website kopi Anda:
+
+1. Pelanggan dapat memberikan ulasan dan rating untuk produk yang mereka beli
+2. Pengguna lain dapat melihat ulasan untuk membantu keputusan pembelian
+3. Gambar dapat dilampirkan untuk menunjukkan pengalaman nyata dengan produk
+4. Admin dapat memoderasi ulasan untuk menjaga kualitas konten
+5. Ulasan terbaik dapat ditonjolkan sebagai unggulan (featured)
+6. Sistem like memungkinkan interaksi sosial antar pengguna
