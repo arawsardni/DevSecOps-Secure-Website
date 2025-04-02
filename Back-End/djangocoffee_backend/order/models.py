@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.conf import settings
 from product.models import Product
+from address.models import Address
 
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -34,7 +35,7 @@ class Order(models.Model):
     delivery_method = models.CharField(max_length=20, choices=DELIVERY_CHOICES, default='pickup')
     
     # Informasi pengiriman (jika delivery)
-    delivery_address = models.TextField(blank=True, null=True)
+    delivery_address = models.ForeignKey(Address, on_delete=models.SET_NULL, related_name='orders', null=True, blank=True)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_notes = models.TextField(blank=True, null=True)
     

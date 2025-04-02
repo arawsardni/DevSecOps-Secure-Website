@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Order, OrderItem, OrderPayment, OrderTracking
 from product.serializers import ProductDetailSerializer
+from address.serializers import AddressSerializer
 from django.db import transaction
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -43,13 +44,14 @@ class OrderDetailSerializer(serializers.ModelSerializer):
     subtotal = serializers.SerializerMethodField()
     total_with_delivery = serializers.SerializerMethodField()
     final_total = serializers.SerializerMethodField()
+    delivery_address_detail = AddressSerializer(source='delivery_address', read_only=True)
     
     class Meta:
         model = Order
         fields = (
             'id', 'order_number', 'user', 'status', 'status_display', 
             'payment_status', 'payment_status_display', 'delivery_method', 
-            'delivery_method_display', 'delivery_address', 'delivery_fee',
+            'delivery_method_display', 'delivery_address', 'delivery_address_detail', 'delivery_fee',
             'delivery_notes', 'pickup_location', 'pickup_time',
             'special_instructions', 'estimated_delivery_time',
             'points_earned', 'points_used', 'discount_amount',
