@@ -116,3 +116,96 @@ Aplikasi payment telah berhasil dibuat dengan fitur-fitur berikut:
    - Filter berdasarkan status dan waktu
 
 Aplikasi payment dirancang dengan pendekatan "dummy payment" yang mensimulasikan alur pembayaran tanpa menggunakan gateway pembayaran aktual. Ini memungkinkan pengujian alur pembayaran lengkap tanpa perlu integrasi pihak ketiga.
+
+## Aplikasi Shipping
+
+Aplikasi shipping telah berhasil dibuat dengan fitur-fitur berikut:
+
+### Model
+
+1. `ShippingProvider`
+
+   - Menyimpan informasi penyedia jasa pengiriman (seperti JNE, SiCepat, dll.)
+   - Mendukung status aktif/tidak aktif
+   - Integrasi dengan URL tracking
+   - Penyimpanan logo provider
+
+2. `ShippingMethod`
+
+   - Menyimpan metode pengiriman dari penyedia (seperti JNE REG, SiCepat BEST, dll.)
+   - Berbagai tipe pengiriman (standar, ekspres, instan, dll.)
+   - Estimasi waktu pengiriman
+   - Status aktif/tidak aktif dan fitur unggulan
+
+3. `ShippingRate`
+
+   - Tarif pengiriman berdasarkan asal, tujuan, dan berat
+   - Dukungan untuk harga berdasarkan kelebihan berat
+   - Estimasi waktu pengiriman dalam hari
+   - Status aktif/tidak aktif
+
+4. `Shipment`
+
+   - Menyimpan data pengiriman untuk order
+   - Berbagai status pengiriman (pending, processing, in_transit, delivered, dll.)
+   - Informasi waktu pengiriman (shipped_at, estimated_delivery, actual_delivery)
+   - Detail biaya dan berat
+
+5. `ShipmentTracking`
+
+   - Menyimpan riwayat/log tracking pengiriman
+   - Informasi lokasi dan deskripsi
+   - Timestamp untuk setiap update
+
+6. `ShippingConfiguration`
+   - Konfigurasi pengiriman global
+   - Default asal pengiriman (kota dan provinsi)
+   - Pengaturan untuk pengiriman gratis dan tarif flat
+   - Berat default per item
+
+### API Endpoints
+
+1. Public API
+
+   - `GET /api/shipping/providers/` - Mendapatkan daftar penyedia jasa pengiriman
+   - `GET /api/shipping/providers/<id>/` - Mendapatkan detail penyedia jasa pengiriman
+   - `GET /api/shipping/methods/` - Mendapatkan daftar metode pengiriman
+   - `POST /api/shipping/calculate/` - Menghitung tarif pengiriman berdasarkan asal, tujuan, berat
+
+2. User API
+
+   - `GET /api/shipping/user/shipments/` - Mendapatkan daftar pengiriman user
+   - `GET /api/shipping/user/shipments/<id>/` - Mendapatkan detail pengiriman
+   - `GET /api/shipping/user/orders/<id>/shipment/` - Mendapatkan detail pengiriman untuk order tertentu
+
+3. Admin API
+   - Endpoints untuk mengelola pengiriman, tracking, dan konfigurasi
+   - Endpoints untuk mengelola provider, metode, dan tarif pengiriman
+   - Endpoints untuk statistik dan laporan
+
+### Fitur Utama
+
+1. Kalkulasi Tarif
+
+   - Perhitungan otomatis berdasarkan berat dan jarak
+   - Opsi tarif flat untuk kesederhanaan
+   - Pengiriman gratis untuk pesanan di atas jumlah tertentu
+
+2. Tracking
+
+   - Pencatatan semua perubahan status pengiriman
+   - Integrasi dengan URL tracking penyedia jasa pengiriman
+   - Notifikasi untuk perubahan status pengiriman
+
+3. Integrasi Order
+
+   - Pengiriman terhubung langsung dengan order
+   - Update status order otomatis saat pengiriman selesai
+   - Pembuatan pengiriman otomatis saat order dibayar
+
+4. Admin Panel
+   - Dashboard visual untuk melihat status pengiriman
+   - Tools untuk memperbarui status dan tracking
+   - Pengelolaan penyedia jasa pengiriman dan metode
+
+Aplikasi shipping dirancang dengan pendekatan fleksibel yang memudahkan integrasi dengan berbagai penyedia jasa pengiriman. Sistem ini mendukung berbagai metode pengiriman, perhitungan tarif berdasarkan berat dan jarak, serta pelacakan status pengiriman secara real-time.
