@@ -1,59 +1,76 @@
-from django.contrib.auth import authenticate
-from django.http import JsonResponse
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated  # Perbaiki di sini!
-from rest_framework.authtoken.models import Token
-from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import status, permissions
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework import status
-from .models import User
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
-import logging
+from rest_framework_simplejwt.tokens import RefreshToken
+from .serializers import (
+    RegisterSerializer,
+    LoginSerializer,
+    UserSerializer,
+    UserUpdateSerializer
+)
+
+User = get_user_model()
 
 @api_view(['POST'])
-@authentication_classes([])  # Tidak membutuhkan autentikasi
-@permission_classes([])       # Tidak membutuhkan izin khusus
+@permission_classes([permissions.AllowAny])
 def register(request):
     serializer = RegisterSerializer(data=request.data)
-    if serializer.is_valid():
-        user = serializer.save()
-        refresh = RefreshToken.for_user(user)  # Buat refresh & access token
-        return Response({
-            'user': UserSerializer(user).data,
-            'access': str(refresh.access_token),
-            'refresh': str(refresh)  # Tambahkan refresh token
-        }, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        'user': UserSerializer(user).data,
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
-@authentication_classes([])  
-@permission_classes([])       
+@permission_classes([permissions.AllowAny])
 def login(request):
     serializer = LoginSerializer(data=request.data)
-    if serializer.is_valid():
-        email = serializer.validated_data['email']
-        password = serializer.validated_data['password']
-        user = authenticate(email=email, password=password)
-        if user:
+    serializer.is_valid(raise_exception=True)
+    try:
+        user = User.objects.get(email=serializer.validated_data['email'])
+        if user.check_password(serializer.validated_data['password']):
             refresh = RefreshToken.for_user(user)
             return Response({
                 'user': UserSerializer(user).data,
+                'refresh': str(refresh),
                 'access': str(refresh.access_token),
-                'refresh': str(refresh)
             })
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {'error': 'Invalid credentials'}, 
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    except ObjectDoesNotExist:
+        return Response(
+            {'error': 'User not found'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
 
-
-logger = logging.getLogger(__name__)
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def logout(request):
+    try:
+        refresh_token = request.data["refresh_token"]
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response(status=status.HTTP_205_RESET_CONTENT)
+    except Exception:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-@authentication_classes([])  # Jika ingin bisa diakses tanpa login, kosongkan ini (untuk test api)
-@permission_classes([IsAuthenticated])  # Harus login untuk melihat profile (untuk test api)
+@permission_classes([permissions.IsAuthenticated])
 def user_profile(request):
-    logger.info(f"User making request: {request.user} (Authenticated: {request.user.is_authenticated})")
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data)
 
-    if not request.user.is_authenticated:
-        return Response({'error': 'User not authenticated'}, status=401)
-
-    return Response({'user': UserSerializer(request.user).data})
+@api_view(['PUT', 'PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+def update_profile(request):
+    serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(UserSerializer(request.user).data)

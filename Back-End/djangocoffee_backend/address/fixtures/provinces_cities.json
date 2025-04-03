@@ -1,0 +1,182 @@
+[
+  {
+    "model": "address.province",
+    "pk": "2f74bd8e-c7b3-4da7-951f-3dc5e8af7abc",
+    "fields": {
+      "name": "DKI Jakarta",
+      "code": "JKT"
+    }
+  },
+  {
+    "model": "address.province",
+    "pk": "3a74bd8e-c7b3-4da7-951f-3dc5e8af7def",
+    "fields": {
+      "name": "Jawa Barat",
+      "code": "JBR"
+    }
+  },
+  {
+    "model": "address.province",
+    "pk": "4b74bd8e-c7b3-4da7-951f-3dc5e8af7a1c",
+    "fields": {
+      "name": "Jawa Tengah",
+      "code": "JTG"
+    }
+  },
+  {
+    "model": "address.province",
+    "pk": "5c74bd8e-c7b3-4da7-951f-3dc5e8af7b2d",
+    "fields": {
+      "name": "Jawa Timur",
+      "code": "JTM"
+    }
+  },
+  {
+    "model": "address.province",
+    "pk": "6d74bd8e-c7b3-4da7-951f-3dc5e8af7c3e",
+    "fields": {
+      "name": "Bali",
+      "code": "BAL"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "7e74bd8e-c7b3-4da7-951f-3dc5e8af7d4f",
+    "fields": {
+      "province": "2f74bd8e-c7b3-4da7-951f-3dc5e8af7abc",
+      "name": "Jakarta Selatan",
+      "code": "JKTS",
+      "postal_code": "12000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "8f74bd8e-c7b3-4da7-951f-3dc5e8af7e5a",
+    "fields": {
+      "province": "2f74bd8e-c7b3-4da7-951f-3dc5e8af7abc",
+      "name": "Jakarta Pusat",
+      "code": "JKTP",
+      "postal_code": "10000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "9a74bd8e-c7b3-4da7-951f-3dc5e8af7f6b",
+    "fields": {
+      "province": "2f74bd8e-c7b3-4da7-951f-3dc5e8af7abc",
+      "name": "Jakarta Barat",
+      "code": "JKTB",
+      "postal_code": "11000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "1b74bd8e-c7b3-4da7-951f-3dc5e8af7aaa",
+    "fields": {
+      "province": "2f74bd8e-c7b3-4da7-951f-3dc5e8af7abc",
+      "name": "Jakarta Timur",
+      "code": "JKTT",
+      "postal_code": "13000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "2c74bd8e-c7b3-4da7-951f-3dc5e8af7bbb",
+    "fields": {
+      "province": "2f74bd8e-c7b3-4da7-951f-3dc5e8af7abc",
+      "name": "Jakarta Utara",
+      "code": "JKTU",
+      "postal_code": "14000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "3d74bd8e-c7b3-4da7-951f-3dc5e8af7ccc",
+    "fields": {
+      "province": "3a74bd8e-c7b3-4da7-951f-3dc5e8af7def",
+      "name": "Bandung",
+      "code": "BDG",
+      "postal_code": "40000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "4e74bd8e-c7b3-4da7-951f-3dc5e8af7ddd",
+    "fields": {
+      "province": "3a74bd8e-c7b3-4da7-951f-3dc5e8af7def",
+      "name": "Bogor",
+      "code": "BGR",
+      "postal_code": "16000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "5f74bd8e-c7b3-4da7-951f-3dc5e8af7eee",
+    "fields": {
+      "province": "3a74bd8e-c7b3-4da7-951f-3dc5e8af7def",
+      "name": "Depok",
+      "code": "DPK",
+      "postal_code": "16400"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "6a74bd8e-c7b3-4da7-951f-3dc5e8af7fff",
+    "fields": {
+      "province": "3a74bd8e-c7b3-4da7-951f-3dc5e8af7def",
+      "name": "Bekasi",
+      "code": "BKS",
+      "postal_code": "17000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "7b74bd8e-c7b3-4da7-951f-3dc5e8af7a1a",
+    "fields": {
+      "province": "4b74bd8e-c7b3-4da7-951f-3dc5e8af7a1c",
+      "name": "Semarang",
+      "code": "SMG",
+      "postal_code": "50000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "8c74bd8e-c7b3-4da7-951f-3dc5e8af7b2b",
+    "fields": {
+      "province": "4b74bd8e-c7b3-4da7-951f-3dc5e8af7a1c",
+      "name": "Solo",
+      "code": "SOL",
+      "postal_code": "57000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "9d74bd8e-c7b3-4da7-951f-3dc5e8af7c3c",
+    "fields": {
+      "province": "5c74bd8e-c7b3-4da7-951f-3dc5e8af7b2d",
+      "name": "Surabaya",
+      "code": "SBY",
+      "postal_code": "60000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "1e74bd8e-c7b3-4da7-951f-3dc5e8af7d4d",
+    "fields": {
+      "province": "5c74bd8e-c7b3-4da7-951f-3dc5e8af7b2d",
+      "name": "Malang",
+      "code": "MLG",
+      "postal_code": "65000"
+    }
+  },
+  {
+    "model": "address.city",
+    "pk": "2f74bd8e-c7b3-4da7-951f-3dc5e8af7e5e",
+    "fields": {
+      "province": "6d74bd8e-c7b3-4da7-951f-3dc5e8af7c3e",
+      "name": "Denpasar",
+      "code": "DPS",
+      "postal_code": "80000"
+    }
+  }
+]

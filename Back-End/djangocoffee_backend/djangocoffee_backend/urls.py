@@ -23,7 +23,14 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/products/', include('product.urls')),
     path('api/auth/', include('useraccount.urls')),
-
+    path('api/cart/', include('cart.urls')),
+    path('api/orders/', include('order.urls')),
+    path('api/reviews/', include('review.urls')),
+    path('api/addresses/', include('address.urls')),
+    path('api/notifications/', include('notification.urls')),
+    path('api/payments/', include('payment.urls')),
+    path('api/shipping/', include('shipping.urls')),
+    path('api/core/', include('core.urls')),
 ]
 
 if settings.DEBUG:
