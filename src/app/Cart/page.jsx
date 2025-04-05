@@ -24,13 +24,18 @@ export default function Cart() {
     }, []);
 
     const handleQuantityChange = (id, quantity) => {
-        const updated = cartItems.map((item) =>
-            item.id === id ? { ...item, quantity: Math.max(quantity, 1) } : item
-        );
+        let updated;
+        if (quantity < 1) {
+            updated = cartItems.filter((item) => item.id !== id);
+        } else {
+            updated = cartItems.map((item) =>
+                item.id === id ? { ...item, quantity } : item
+            );
+        }
         setCartItems(updated);
         localStorage.setItem("cart", JSON.stringify(updated));
     };
-
+    
     const handleSizeChange = (id, size) => {
         const updated = cartItems.map((item) =>
             item.id === id ? { ...item, size } : item
@@ -55,7 +60,11 @@ export default function Cart() {
                     return (
                         <div key={item.id} className="flex justify-between items-center bg-white p-4 rounded shadow">
                             <div className="flex items-center gap-4">
-                                <img src={prod?.image} alt={prod?.title} className="w-16 h-16 rounded object-cover" />
+                            <img
+                            src={(prod?.image || item.image).startsWith("/") ? (prod?.image || item.image) : `/${prod?.image || item.image}`}
+                            alt={prod?.title || item.title}
+                            className="w-16 h-16 object-cover rounded"
+                            />
                                 <div>
                                     <h3 className="font-semibold">{item.title}</h3>
                                     <p>{formatRupiah(parseInt(item.price.replace(/\./g, "")))}</p>

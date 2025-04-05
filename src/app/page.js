@@ -8,13 +8,15 @@ import CustomerReviews from "./(Landing)/CustomerReviews";
 
 export default function Home() {
   return (
-    <div className="flex flex-col space-y-20 mb-20">
-      <Hero />
-      <AboutUs />
-      <Specialties />
-      <Recommended />
-      <OurStory />
-      <CustomerReviews />
+    <div className="mb-20">
+      <div className="flex flex-col space-y-20 max-w-[1200px] w-full mx-auto px-4">
+        <Hero />
+        <AboutUs />
+        <Specialties />
+        <Recommended />
+        <OurStory />
+        <CustomerReviews />
+      </div>
     </div>
   );
 }

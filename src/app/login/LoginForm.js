@@ -1,8 +1,20 @@
-
 "use client";
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
+const dummyUser = {
+  email: "user@forcoffi.com",
+  password: "123456",
+  name: "Wahyu Tri",
+  phone_number: "08123456789",
+  avatar: "/avatar.png",
+  address: "Jl. Kopi No. 10, Jakarta",
+  preferred_pickup_location: "Forcoffi Cikini",
+  points: 1200,
+  total_spent: 980000,
+};
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -16,24 +28,19 @@ export default function LoginForm() {
     setLoading(true);
     setError("");
 
-    // Simulasi validasi
     if (!email || !password) {
       setError("Email dan password harus diisi");
       setLoading(false);
       return;
     }
 
-    try {
-      // Di sini nanti tambahkan logika autentikasi sebenarnya
-      // Simulasi login berhasil
-      setTimeout(() => {
-        // Redirect ke landing page setelah login
-        router.push("/");
-      }, 1000);
-    } catch (err) {
-      setError("Gagal login. Silakan coba lagi.");
-      setLoading(false);
+    if (email === dummyUser.email && password === dummyUser.password) {
+      localStorage.setItem("user", JSON.stringify(dummyUser));
+      router.push("/");
+    } else {
+      setError("Email atau password salah");
     }
+    setLoading(false);
   };
 
   return (
@@ -46,10 +53,7 @@ export default function LoginForm() {
         )}
 
         <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
             Email
           </label>
           <div className="mt-1">
@@ -67,10 +71,7 @@ export default function LoginForm() {
         </div>
 
         <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Password
           </label>
           <div className="mt-1">
@@ -95,19 +96,13 @@ export default function LoginForm() {
               type="checkbox"
               className="h-4 w-4 text-brown-600 focus:ring-brown-500 border-gray-300 rounded"
             />
-            <label
-              htmlFor="remember-me"
-              className="ml-2 block text-sm text-gray-700"
-            >
+            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
               Ingat saya
             </label>
           </div>
 
           <div className="text-sm">
-            <Link
-              href="#"
-              className="font-medium text-brown-600 hover:text-brown-500"
-            >
+            <Link href="#" className="font-medium text-brown-600 hover:text-brown-500">
               Lupa password?
             </Link>
           </div>
@@ -126,7 +121,7 @@ export default function LoginForm() {
 
         <div className="text-center text-sm">
           <p className="text-gray-600">
-            Belum punya akun?{" "}
+            Belum punya akun? {" "}
             <Link
               href="/register"
               onClick={() => router.push("/register")}

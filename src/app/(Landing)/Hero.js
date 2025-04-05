@@ -27,7 +27,7 @@ export function Hero() {
   }, [api]);
 
   return (
-      <div className="h-56 sm:h-64 xl:h-80 2xl:h-96 w-3/4 mx-auto my-4">
+    <div className="h-56 sm:h-64 xl:h-80 2xl:h-96">
         <Carousel pauseOnHover>
           <Image src="/kopi-fore.png" alt="..." width={10000} height={10000} className="max-w-full"/>
           <Image src="/Barista.jpg" alt="..." width={1000} height={1000} className="max-w-full"/>

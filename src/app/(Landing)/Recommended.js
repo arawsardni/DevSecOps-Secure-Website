@@ -1,37 +1,22 @@
+// components/Recommended.jsx
 import CardComponent from "@/components/CardComponent";
-import Image from "next/image";
+import { products } from "@/app/Product/data"; // pastikan path-nya benar
 
 export function Recommended() {
-  const products = [
-    {
-      imgSrc: "/Fore-Double-Iced-Shaken-Latte.jpg",
-      title: "Double Iced Shaken Latte",
-      rating: "5.0",
-      price: "32.000",
-    },
-    {
-      imgSrc: "/Fore-Capucino-Iced.jpg",
-      title: "Cappucino Latte",
-      rating: "4.8",
-      price: "29.000",
-    },
-    {
-      imgSrc: "/Fore-Ice-Milo.jpg",
-      title: "Ice Milo",
-      rating: "4.7",
-      price: "20.000",
-    },
-  ];
+  // Filter contoh: hanya tampilkan 3 produk teratas dari kategori Coffee Series
+  const recommendedItems = products
+    .filter((item) => item.category === "Coffee Series")
+    .slice(0, 3);
 
   return (
-    <div className="flex flex-row gap-6 justify-center my-16 w-3/4 mx-auto">
-      {products.map((product, index) => (
+    <div className="flex flex-wrap gap-6 justify-center my-16 w-11/12 mx-auto">
+      {recommendedItems.map((item) => (
         <CardComponent
-          key={index}
-          imgSrc={product.imgSrc}
-          title={product.title}
-          rating={product.rating}
-          price={product.price}
+          key={item.id}
+          imgSrc={item.image}
+          title={item.title}
+          rating={item.rating}
+          price={item.price}
         />
       ))}
     </div>

@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function AboutUs() {
   return (
-    <section className="flex flex-col items-center text-center px-6 md:px-16 py-12 bg-white">
+    <section className="flex flex-col items-center text-center py-12 bg-white">
       {/* Teks About Us */}
       <div className="w-full md:w-3/4 lg:w-2/3">
         <h2 className="text-2xl font-bold text-gray-900">About Us</h2>
