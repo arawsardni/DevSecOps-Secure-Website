@@ -17,7 +17,7 @@ export default function AboutUs() {
       <div className="w-full flex justify-center mt-6">
         <div className="relative w-full md:w-3/4 lg:w-2/3 h-[250px] md:h-[350px]">
           <Image 
-            src="/kopi-fore.png" 
+            src="/forcoffi.png" 
             alt="About Us" 
             layout="fill"
             objectFit="cover"

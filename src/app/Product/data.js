@@ -140,3 +140,20 @@ export const categories = [
     "Refresher Series",
     "Tea Series"
 ];
+
+export const pickupSuggestions = [
+    "Forcoffi Ijen Nirwana",
+    "Forcoffi Dieng",
+    "Forcoffi Soekarno Hatta",
+    "Forcoffi Sigura-Gura",
+    "Forcoffi Lowokwaru",
+    "Forcoffi Dinoyo",
+    "Forcoffi Tlogomas",
+    "Forcoffi Sawojajar",
+    "Forcoffi Madyopuro",
+    "Forcoffi Malang Town Square (MATOS)",
+    "Forcoffi Universitas Brawijaya",
+    "Forcoffi Universitas Negeri Malang",
+    "Forcoffi Malang City Point",
+  ];
+  

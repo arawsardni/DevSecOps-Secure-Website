@@ -22,3 +22,7 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background-color: #a1a1aa;
 }
+
+.leaflet-control {
+  z-index: 10 !important;
+}

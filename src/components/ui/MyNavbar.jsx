@@ -1,3 +1,5 @@
+//myNavbar
+
 "use client";
 
 import { Button, Dropdown, Navbar, TextInput } from "flowbite-react";
@@ -14,6 +16,11 @@ export function MyNavbar() {
   const router = useRouter();
 
   useEffect(() => {
+    const checkUser = () => {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      setUser(storedUser);
+    };
+
     const updateCartCount = () => {
       const cart = JSON.parse(localStorage.getItem("cart")) || [];
       const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -38,7 +45,7 @@ export function MyNavbar() {
 
   const handleSearch = (e) => {
     if (e.key === "Enter" && searchTerm.trim() !== "") {
-      router.push(`/Product?search=${encodeURIComponent(searchTerm.trim())}`);
+        router.push(`/Product?search=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
 
@@ -50,17 +57,21 @@ export function MyNavbar() {
   ];
 
   return (
-    <Navbar fluid rounded className="bg-white text-[#5A2E0D] sticky top-0 z-50 shadow-sm">
+    <Navbar
+      fluid
+      rounded
+      className="bg-white text-[#5A2E0D] sticky top-0 z-50 shadow-sm"
+    >
       {/* Brand */}
       <Navbar.Brand as={Link} href="/">
-        <img src="/Logo.png" className="mr-3 h-6 sm:h-9" alt="Forcoffi Logo" />
+        <img src="/Logo.png" className="h-6 mr-3 sm:h-9" alt="Forcoffi Logo" />
         <span className="self-center whitespace-nowrap text-xl font-semibold text-[#8B4513]">
           Forcoffi
         </span>
       </Navbar.Brand>
 
       {/* Search */}
-      <div className="mx-4 hidden md:block max-w-3xl w-full">
+      <div className="hidden w-full max-w-3xl mx-4 md:block">
         <TextInput
           type="search"
           placeholder="Cari kopi kesukaanmu..."
@@ -73,12 +84,12 @@ export function MyNavbar() {
       </div>
 
       {/* Right Side */}
-      <div className="flex md:order-2 space-x-4 items-center">
+      <div className="flex items-center space-x-4 md:order-2">
         {/* Cart */}
         <button onClick={() => router.push("/Cart")} className="relative">
           <img src="/Cart.png" className="w-7 h-7" alt="Cart" />
           {cartCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full px-2 text-xs">
+            <span className="absolute px-2 text-xs text-white bg-red-500 rounded-full -top-2 -right-2">
               {cartCount}
             </span>
           )}
@@ -91,20 +102,23 @@ export function MyNavbar() {
               <img
                 src={user.avatar || "/avatar-default.png"}
                 alt="Avatar"
-                className="w-8 h-8 rounded-full object-cover"
+                className="object-cover w-8 h-8 rounded-full"
               />
             }
             inline
           >
             <Dropdown.Header>
               <span className="block text-sm">{user.name}</span>
-              <span className="block truncate text-sm font-medium">{user.email}</span>
+              <span className="block text-sm font-medium truncate">
+                {user.email}
+              </span>
             </Dropdown.Header>
             <Dropdown.Item onClick={() => router.push("/profile")}>
               Profile
             </Dropdown.Item>
             <Dropdown.Item
               onClick={() => {
+                setUser(null);
                 localStorage.removeItem("user");
                 router.push("/");
               }}
@@ -130,7 +144,9 @@ export function MyNavbar() {
             key={link.name}
             as={Link}
             href={link.href}
-            className={pathname === link.href ? "!text-[#8B4513] font-semibold" : ""}
+            className={
+              pathname === link.href ? "!text-[#8B4513] font-semibold" : ""
+            }
           >
             {link.name}
           </Navbar.Link>

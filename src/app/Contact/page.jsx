@@ -25,7 +25,7 @@ export default function ContactPage() {
                     <div className="space-y-2 text-sm">
                         <div>📞 0812-8888-6985</div>
                         <div>📧 hello@forcoffi.coffee</div>
-                        <div>📍 Gedung Graha Ganesha, Lantai 1 Suite 120 & 130<br/>Jl. Hayam Wuruk No.28, Jakarta Pusat</div>
+                        <div>📍 Jl. Soekarno Hatta No.15, Lowokwaru, Kota Malang, Jawa Timur<br/></div>
                     </div>
                 </div>
 
