@@ -27,13 +27,13 @@ export function Hero() {
   }, [api]);
 
   return (
-      <div className="h-56 sm:h-64 xl:h-80 2xl:h-96 w-3/4 mx-auto my-4">
+    <div className="h-56 sm:h-64 xl:h-80 2xl:h-96">
         <Carousel pauseOnHover>
           <Image src="/kopi-fore.png" alt="..." width={10000} height={10000} className="max-w-full"/>
           <Image src="/Barista.jpg" alt="..." width={1000} height={1000} className="max-w-full"/>
-          <Image src="https://flowbite.com/docs/images/carousel/carousel-3.svg" alt="..." width={500} height={500}/>
-          <Image src="https://flowbite.com/docs/images/carousel/carousel-4.svg" alt="..." width={500} height={500}/>
-          <Image src="https://flowbite.com/docs/images/carousel/carousel-5.svg" alt="..." width={500} height={500}/>
+          <Image src="/1626286686p.jpg" alt="..." width={500} height={500}/>
+          <Image src="/20250320-fore-banner.jpg" alt="..." width={500} height={500}/>
+          <Image src="/Banner.png" alt="..." width={500} height={500}/>
         </Carousel>
       </div>
   );
