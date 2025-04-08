@@ -1,8 +1,7 @@
-// components/ui/AddToCartButton.jsx
 "use client";
 import { useRouter } from "next/navigation";
 
-export default function AddToCartButton({ product }) {
+export default function AddToCartButton({ product, customization, disabled }) {
   const router = useRouter();
 
   const handleAdd = () => {
@@ -12,7 +11,17 @@ export default function AddToCartButton({ product }) {
     if (existing) {
       existing.quantity += 1;
     } else {
-      cart.push({ ...product, quantity: 1 });
+      cart.push({
+        id: product.id,
+        title: product.title,
+        image: product.image,
+        price: product.price,
+        quantity: 1,
+        size: customization.size,
+        ice: customization.ice,
+        sugar: customization.sugar,
+        shot: customization.shot,
+      });
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
@@ -22,7 +31,12 @@ export default function AddToCartButton({ product }) {
   return (
     <button
       onClick={handleAdd}
-      className="bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg w-full"
+      disabled={disabled}
+      className={`${
+        disabled
+          ? "bg-gray-300 cursor-not-allowed"
+          : "bg-yellow-400 hover:bg-yellow-500"
+      } text-white font-semibold py-2 px-4 rounded-lg w-full`}
     >
       + Keranjang
     </button>

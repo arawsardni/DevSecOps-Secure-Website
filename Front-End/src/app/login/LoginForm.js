@@ -1,22 +1,8 @@
-//loginform.js
-
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-const dummyUser = {
-  email: "user@forcoffi.com",
-  password: "123456",
-  name: "Wahyu Tri",
-  phone_number: "08123456789",
-  avatar: "/avatar.png",
-  address: "Jl. Kopi No. 10, Jakarta",
-  preferred_pickup_location: "Forcoffi Cikini",
-  points: 1200,
-  total_spent: 980000,
-};
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -42,14 +28,31 @@ export default function LoginForm() {
       return;
     }
 
-    if (email === dummyUser.email && password === dummyUser.password) {
-      localStorage.setItem("user", JSON.stringify(dummyUser));
-      window.location.reload();
-      router.push("/");
-    } else {
-      setError("Email atau password salah");
+    try {
+      const res = await fetch("http://localhost:8000/api/auth/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("access", data.access);
+        localStorage.setItem("refresh", data.refresh);
+        router.push("/");
+      } else {
+        setError(data.message || "Email atau password salah");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Gagal menghubungi server");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -62,45 +65,35 @@ export default function LoginForm() {
         )}
 
         <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
             Email
           </label>
-          <div className="mt-1">
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brown-500 focus:border-brown-500"
-            />
-          </div>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brown-500 focus:border-brown-500"
+          />
         </div>
 
         <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Password
           </label>
-          <div className="mt-1">
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brown-500 focus:border-brown-500"
-            />
-          </div>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brown-500 focus:border-brown-500"
+          />
         </div>
 
         <div className="flex items-center justify-between">
@@ -109,21 +102,14 @@ export default function LoginForm() {
               id="remember-me"
               name="remember-me"
               type="checkbox"
-              className="w-4 h-4 border-gray-300 rounded text-brown-600 focus:ring-brown-500"
+              className="w-4 h-4 text-brown-600 border-gray-300 rounded focus:ring-brown-500"
             />
-            <label
-              htmlFor="remember-me"
-              className="block ml-2 text-sm text-gray-700"
-            >
+            <label htmlFor="remember-me" className="block ml-2 text-sm text-gray-700">
               Ingat saya
             </label>
           </div>
-
           <div className="text-sm">
-            <Link
-              href="#"
-              className="font-medium text-brown-600 hover:text-brown-500"
-            >
+            <Link href="#" className="font-medium text-brown-600 hover:text-brown-500">
               Lupa password?
             </Link>
           </div>
@@ -133,7 +119,7 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="flex justify-center w-full px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md shadow-sm bg-brown-600 hover:bg-brown-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brown-500"
+            className="flex justify-center w-full px-4 py-2 text-sm font-medium text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             style={{ backgroundColor: "#5D4037" }}
           >
             {loading ? "Memproses..." : "Masuk"}
@@ -143,11 +129,7 @@ export default function LoginForm() {
         <div className="text-sm text-center">
           <p className="text-gray-600">
             Belum punya akun?{" "}
-            <Link
-              href="/register"
-              onClick={() => router.push("/register")}
-              className="font-medium text-brown-600 hover:text-brown-500"
-            >
+            <Link href="/register" className="font-medium text-brown-600 hover:text-brown-500">
               Daftar disini
             </Link>
           </p>

@@ -23,32 +23,58 @@ export default function Cart() {
         setCartItems(stored);
     }, []);
 
-    const handleQuantityChange = (id, quantity) => {
-        let updated;
-        if (quantity < 1) {
-            updated = cartItems.filter((item) => item.id !== id);
-        } else {
-            updated = cartItems.map((item) =>
-                item.id === id ? { ...item, quantity } : item
-            );
+    useEffect(() => {
+        const token = localStorage.getItem("access_token");
+    
+        if (token) {
+            fetch("http://localhost:8000/api/profile/", {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                // Cek hanya isi kalau address-nya belum disetting user saat ini
+                if (!address) {
+                    setAddress(data.address || "");
+                }
+            })
+            .catch(err => {
+                console.error("Gagal mengambil data profil user:", err);
+            });
         }
+    }, [address]);    
+
+    const handleQuantityChange = (id, quantity) => {
+        const updated =
+          quantity < 1
+            ? cartItems.filter((item) => item.id !== id)
+            : cartItems.map((item) =>
+                item.id === id ? { ...item, quantity } : item
+              );
         setCartItems(updated);
         localStorage.setItem("cart", JSON.stringify(updated));
     };
     
     const handleSizeChange = (id, size) => {
         const updated = cartItems.map((item) =>
-            item.id === id ? { ...item, size } : item
+          item.id === id ? { ...item, size } : item
         );
         setCartItems(updated);
         localStorage.setItem("cart", JSON.stringify(updated));
+      };
+
+    const getSizeExtraPrice = (size) => {
+        if (size === "Medium") return 5000;
+        if (size === "Large") return 10000;
+        return 0;
     };
 
-    const total = cartItems.reduce(
-        (acc, item) =>
-            acc + parseInt(item.price.replace(/\./g, "")) * item.quantity,
-        0
-    );
+    const total = cartItems.reduce((acc, item) => {
+        const basePrice = parseInt(item.price.replace(/\./g, ""));
+        const sizeExtra = getSizeExtraPrice(item.size);
+        return acc + (basePrice + sizeExtra) * item.quantity;
+    }, 0);    
 
     return (
         <div className="p-6 max-w-4xl mx-auto space-y-8">
@@ -66,18 +92,21 @@ export default function Cart() {
                             className="w-16 h-16 object-cover rounded"
                             />
                                 <div>
-                                    <h3 className="font-semibold">{item.title}</h3>
-                                    <p>{formatRupiah(parseInt(item.price.replace(/\./g, "")))}</p>
-                                    <select
-                                        value={item.size || "M"}
-                                        onChange={(e) => handleSizeChange(item.id, e.target.value)}
-                                        className="border rounded px-2 py-1 mt-1"
-                                    >
-                                        <option value="S">S</option>
-                                        <option value="M">M</option>
-                                        <option value="L">L</option>
-                                        <option value="XL">XL</option>
-                                    </select>
+                                <h3 className="font-semibold">{item.title}</h3>
+                                {/* Deskripsi customization */}
+                                <p className="text-sm italic text-gray-500">
+                                    Es: {item.ice || "-"}, 
+                                    Gula: {item.sugar || "-"}, 
+                                    Shot: {item.shots || "-"}, 
+                                    Ukuran: {item.size || "-"}
+                                    {getSizeExtraPrice(item.size) > 0 && (
+                                        <span className="ml-1 text-red-500">
+                                        (+{formatRupiah(getSizeExtraPrice(item.size))})
+                                        </span>
+                                    )}
+                                </p>
+
+                                <p>{formatRupiah(parseInt(item.price.replace(/\./g, "")))}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">

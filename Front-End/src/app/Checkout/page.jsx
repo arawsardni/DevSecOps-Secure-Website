@@ -23,6 +23,22 @@ export default function Checkout() {
         setSelectedItem({ ...product, quantity: stored.quantity || 1 });
     }, []);
 
+    // di checkout.jsx misalnya
+    useEffect(() => {
+        const token = localStorage.getItem("access_token");
+        if (token) {
+        fetch("http://localhost:8000/api/profile/", {
+            headers: {
+            Authorization: `Bearer ${token}`,
+            },
+        })
+            .then((res) => res.json())
+            .then((data) => {
+            setAddress(data.address); // langsung dapet alamat user
+            });
+        }
+    }, []);      
+
     if (!selectedItem) return <p>Loading...</p>;
 
     const handleQuantityChange = (value) => {

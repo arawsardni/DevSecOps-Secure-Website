@@ -70,21 +70,23 @@ export function MyNavbar() {
         </span>
       </Navbar.Brand>
 
-      {/* Search */}
-      <div className="hidden w-full max-w-3xl mx-4 md:block">
-        <TextInput
-          type="search"
-          placeholder="Cari kopi kesukaanmu..."
-          className="w-full"
-          sizing="md"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={handleSearch}
-        />
-      </div>
-
       {/* Right Side */}
       <div className="flex items-center space-x-4 md:order-2">
+        {/* Navbar Links */}
+        <Navbar.Collapse>
+          {links.map((link) => (
+            <Navbar.Link
+              key={link.name}
+              as={Link}
+              href={link.href}
+              className={
+                pathname === link.href ? "!text-[#8B4513] font-semibold" : ""
+              }
+            >
+              {link.name}
+            </Navbar.Link>
+          ))}
+        </Navbar.Collapse>
         {/* Cart */}
         <button onClick={() => router.push("/Cart")} className="relative">
           <img src="/Cart.png" className="w-7 h-7" alt="Cart" />
@@ -136,22 +138,6 @@ export function MyNavbar() {
 
         <Navbar.Toggle />
       </div>
-
-      {/* Navbar Links */}
-      <Navbar.Collapse>
-        {links.map((link) => (
-          <Navbar.Link
-            key={link.name}
-            as={Link}
-            href={link.href}
-            className={
-              pathname === link.href ? "!text-[#8B4513] font-semibold" : ""
-            }
-          >
-            {link.name}
-          </Navbar.Link>
-        ))}
-      </Navbar.Collapse>
     </Navbar>
   );
 }

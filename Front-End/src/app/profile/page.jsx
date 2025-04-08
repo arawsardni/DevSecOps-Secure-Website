@@ -88,14 +88,14 @@ export default function ProfilePage() {
         <div className="flex justify-center gap-4 mt-4">
           <div className="border-2 border-[#8B4513] bg-[#FFF7ED] rounded-xl p-4 w-40 text-center shadow">
             <div className="text-2xl">📦</div>
-            <p className="font-semibold text-gray-800 mt-2 text-sm">Total Spent</p>
+            <p className="font-semibold text-gray-800 mt-2 text-sm">Total Pengeluaran</p>
             <p className="text-[#8B4513] font-bold text-sm">
               Rp {parseInt(user.total_spent).toLocaleString("id-ID")}
             </p>
           </div>
           <div className="border-2 border-[#8B4513] bg-[#FCEFC7] rounded-xl p-4 w-40 text-center shadow">
             <div className="text-2xl">💰</div>
-            <p className="font-semibold text-gray-800 mt-2 text-sm">Points</p>
+            <p className="font-semibold text-gray-800 mt-2 text-sm">Poin</p>
             <p className="text-[#8B4513] font-bold text-sm">{user.points}</p>
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function ProfilePage() {
 
         {/* Pickup Location with Suggestion */}
         <div className="relative z-10">
-          <label className="block mb-1 text-sm font-bold text-gray-700">Pickup Location Favorit</label>
+          <label className="block mb-1 text-sm font-bold text-gray-700">Lokasi Pengambilan Favorit</label>
           <Textarea
             name="preferred_pickup_location"
             value={form.preferred_pickup_location}

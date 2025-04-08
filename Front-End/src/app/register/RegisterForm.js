@@ -29,14 +29,26 @@ export default function RegisterForm() {
     }
 
     try {
-      // Simulate registration process
-      setTimeout(() => {
-        // Redirect to the login page after successful registration
+      const res = await fetch("http://localhost:8000/api/auth/register/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+    
+      const data = await res.json();
+      console.log("Response status:", res.status);
+      console.log("Response data:", data);
+    
+      if (res.ok) {
         router.push("/login");
-      }, 1000);
+      } else {
+        setError(data.message || "Terjadi kesalahan saat mendaftar");
+      }
     } catch (err) {
-      setError("Gagal mendaftar. Silakan coba lagi.");
-      setLoading(false);
+      console.error("Network error:", err);
+      setError("Gagal menghubungi server");
     }
   };
 

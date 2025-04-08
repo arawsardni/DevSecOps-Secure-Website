@@ -56,12 +56,18 @@ export default function ProductDetail() {
         setLoading(false); // Stop loading when data is fetched
     }, [product]);
 
+    const [ice, setIce] = useState("");
+    const [sugar, setSugar] = useState("");
+    const [shots, setShots] = useState("");
+    const [size, setSize] = useState("");
+
+    const isValid = ice && sugar && size && shots >= 1;
+
     return (
         <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-8">
 
             {/* Header */}
             <div className="flex flex-col md:flex-row gap-8 shadow rounded-lg p-4 bg-white">
-
                 {/* Image */}
                 <div className="flex-1">
                     <img src={product.image} alt={product.title} className="rounded-xl w-full max-h-[450px] object-cover border" />
@@ -77,11 +83,79 @@ export default function ProductDetail() {
                     </div>
                     {product.badge && <span className="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">{product.badge}</span>}
                     <p className="text-sm text-gray-600 mt-2 leading-relaxed">{product.description}</p>
+                    <div className="space-y-2">
+                    {product.canChooseIce !== false && (
+                        <div>
+                            <label className="block text-sm font-medium">Iced</label>
+                            <select
+                            className="w-full border rounded p-2"
+                            value={ice}
+                            onChange={e => setIce(e.target.value)}
+                            >
+                            <option value="">Choose</option>
+                            <option value="Normal">Normal Iced</option>
+                            <option value="Less">Less Iced</option>
+                            <option value="Half">Half Iced</option>
+                            </select>
+                        </div>
+                    )}
 
-                                        {/* Action Buttons */}
+                        <div>
+                            <label className="block text-sm font-medium">Sugar</label>
+                            <select className="w-full border rounded p-2" value={sugar} onChange={e => setSugar(e.target.value)}>
+                                <option value="">Choose</option>
+                                <option value="Normal">Normal Sugar</option>
+                                <option value="Half">Half Sugar</option>
+                                <option value="Less">Less Sugar</option>
+                                <option value="No">No Sugar</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium">Shots</label>
+                                <select
+                                className="w-full border rounded p-2"
+                                value={shots}
+                                onChange={e => setShots(e.target.value)}
+                                >
+                                <option value="">Choose</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                </select>
+                        </div>
+
+                        {product.canChooseIce !== false && (
+                        <div>
+                            <label className="block text-sm font-medium">Size</label>
+                            <select
+                            className="w-full border rounded p-2"
+                            value={ice}
+                            onChange={e => setSize(e.target.value)}
+                            >
+                            <option value="">Choose</option>
+                            <option value="Small">Small</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Large">Large</option>
+                            </select>
+                        </div>
+                    )}
+                    </div>
+
+                    {/* Action Buttons */}
                     <div className="flex gap-2 pt-4">
-                        <AddToCartButton product={product} />
-                        <BuyButton product={product} />
+                    <AddToCartButton
+                        product={product}
+                        disabled={!ice || !sugar || !size}
+                        customization={{ ice, sugar, shots, size }}
+                    />
+                    <BuyButton
+                    product={product}
+                    disabled={!ice || !sugar || !size}
+                    customization={{ ice, sugar, shots, size }}
+                    />
                     </div>
                 </div>
 

@@ -21,6 +21,7 @@ export const products = [
         ]  
     },
     { id: 2, image: '/Menu/AmericanoSeries/Americano Hot.jpg', title: 'Hot Americano', price: '21.000', sold: 98, rating: 4, category: "Americano Series", badge: 'Terlaris', description: 'Kopi klasik dengan rasa pahit yang menyegarkan, cocok diminum kapan saja.',
+        canChooseIce: false,
         reviews: [
             { user: "Budi", rating: 5, comment: "Enak banget", date: "2025-04-01" },
             { user: "Sari", rating: 4, comment: "Pas banget", date: "2025-03-30" },
@@ -28,30 +29,30 @@ export const products = [
     { id: 3, image: '/Menu/AmericanoSeries/Manuka Americano Iced.jpg', title: 'Iced Manuka Americano', price: '29.000', sold: 75, rating: 5, category: "Americano Series", badge: 'Promo',description: 'Kopi klasik dengan rasa pahit yang menyegarkan, cocok diminum kapan saja.',
         reviews: [
         ] },
-    { id: 4, image: '/Menu/AmericanoSeries/Manuka Americano Hot.jpg', title: 'Hot Manuka Americano', price: '29.000', sold: 63, rating: 4, category: "Americano Series" },
+    { id: 4, image: '/Menu/AmericanoSeries/Manuka Americano Hot.jpg', title: 'Hot Manuka Americano', price: '29.000', sold: 63, rating: 4, category: "Americano Series" , canChooseIce: false,},
     { id: 5, image: '/Menu/AmericanoSeries/Triple Peach Americano.jpg', title: 'Triple Peach Americano', price: '29.000', sold: 112, rating: 5, category: "Americano Series" },
     { id: 6, image: '/Menu/AmericanoSeries/Berry Manuka Americano.jpg', title: 'Berry Manuka Americano', price: '29.000', sold: 84, rating: 4, category: "Americano Series" },
 
     // Coffee
     { id: 7, image: '/Menu/CoffeSeries/Bumi Latte w Badge.jpg', title: 'Iced Bumi Latte', price: '24.000', sold: 200, rating: 5, category: "Coffee Series", badge: 'Baru' },
     { id: 8, image: '/Menu/CoffeSeries/Capucino Iced.jpg', title: 'Iced Cappuccino', price: '29.000', sold: 178, rating: 5, category: "Coffee Series" },
-    { id: 9, image: '/Menu/CoffeSeries/Cappucino Hot.jpg', title: 'Hot Cappuccino', price: '29.000', sold: 150, rating: 5, category: "Coffee Series" },
+    { id: 9, image: '/Menu/CoffeSeries/Cappucino Hot.jpg', title: 'Hot Cappuccino', price: '29.000', sold: 150, rating: 5, category: "Coffee Series", canChooseIce: false, },
     { id: 10, image: '/Menu/CoffeSeries/Double Iced Shaken Latte.jpg', title: 'Double Iced Shaken Latte', price: '33.000', sold: 143, rating: 5, category: "Coffee Series" },
     { id: 11, image: '/Menu/CoffeSeries/Cafe Latte Iced.jpg', title: 'Iced Café Latte', price: '29.000', sold: 189, rating: 5, category: "Coffee Series" },
-    { id: 12, image: '/Menu/CoffeSeries/Cafe Latte Hot.jpg', title: 'Hot Café Latte', price: '29.000', sold: 167, rating: 4, category: "Coffee Series" },
+    { id: 12, image: '/Menu/CoffeSeries/Cafe Latte Hot.jpg', title: 'Hot Café Latte', price: '29.000', sold: 167, rating: 4, category: "Coffee Series",canChooseIce: false, },
     { id: 13, image: '/Menu/CoffeSeries/Nutty Oat Latte Iced.jpg', title: 'Nutty Oat Latte', price: '39.000', sold: 122, rating: 5, category: "Coffee Series" },
     { id: 14, image: '/Menu/CoffeSeries/Buttercream Tiramisu Latte.jpg', title: 'Iced Buttercream Tiramisu Latte', price: '33.000', sold: 95, rating: 5, category: "Coffee Series" },
     { id: 15, image: '/Menu/CoffeSeries/espresso173.jpg', title: 'Hot Espresso', price: '19.000', sold: 211, rating: 4, category: "Coffee Series" },
     { id: 16, image: '/Menu/CoffeSeries/Caramel Praline Macchiato Iced.jpg', title: 'Iced Caramel Praline Macchiato', price: '33.000', sold: 118, rating: 5, category: "Coffee Series" },
-    { id: 17, image: '/Menu/CoffeSeries/Caramel Praline Macchiato Hot.jpg', title: 'Hot Caramel Praline Macchiato', price: '33.000', sold: 106, rating: 5, category: "Coffee Series" },
+    { id: 17, image: '/Menu/CoffeSeries/Caramel Praline Macchiato Hot.jpg', title: 'Hot Caramel Praline Macchiato', price: '33.000', sold: 106, rating: 5, category: "Coffee Series", canChooseIce: false, },
 
     // Nusantara Series
     { id: 18, image: '/Menu/NusantaraSeries/ICED COD.jpg', title: 'Iced Aceh Gayo', price: '21.000', sold: 132, rating: 5, category: "Nusantara Series" },
-    { id: 19, image: '/Menu/NusantaraSeries/COD_satuan-01.jpg', title: 'Hot Aceh Gayo', price: '21.000', sold: 118, rating: 4, category: "Nusantara Series" },
+    { id: 19, image: '/Menu/NusantaraSeries/COD_satuan-01.jpg', title: 'Hot Aceh Gayo', price: '21.000', sold: 118, rating: 4, category: "Nusantara Series", canChooseIce: false, },
     { id: 20, image: '/Menu/NusantaraSeries/ICED COD.jpg', title: 'Iced Toraja Sapan', price: '21.000', sold: 101, rating: 5, category: "Nusantara Series" },
-    { id: 21, image: '/Menu/NusantaraSeries/COD_satuan-02.jpg', title: 'Hot Toraja Sapan', price: '21.000', sold: 86, rating: 4, category: "Nusantara Series" },
+    { id: 21, image: '/Menu/NusantaraSeries/COD_satuan-02.jpg', title: 'Hot Toraja Sapan', price: '21.000', sold: 86, rating: 4, category: "Nusantara Series", canChooseIce: false, },
     { id: 22, image: '/Menu/NusantaraSeries/ICED COD.jpg', title: 'Iced Bali Kintamani', price: '21.000', sold: 97, rating: 5, category: "Nusantara Series" },
-    { id: 23, image: '/Menu/NusantaraSeries/COD_satuan-03.jpg', title: 'Hot Bali Kintamani', price: '21.000', sold: 79, rating: 4, category: "Nusantara Series" },
+    { id: 23, image: '/Menu/NusantaraSeries/COD_satuan-03.jpg', title: 'Hot Bali Kintamani', price: '21.000', sold: 79, rating: 4, category: "Nusantara Series", canChooseIce: false, },
     // FOREveryone 1L
     { id: 24, image: '/Menu/1L/cocopeach.jpg', title: 'Coco Peach Fusion 1L', price: '90.000', sold: 63, rating: 5, category: "FORCOFFEveryone 1L Series", badge: 'Terlaris' },
     { id: 25, image: '/Menu/1L/Kopi dari Tani - RTD.jpg', title: 'Kopi Dari Tani 1L', price: '84.000', sold: 58, rating: 5, category: "FORCOFFEveryone 1L Series", badge: 'Baru' },
