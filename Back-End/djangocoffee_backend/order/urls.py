@@ -10,6 +10,7 @@ urlpatterns = [
     path('create/', api.create_order, name='create_order'),
     path('<uuid:order_id>/cancel/', api.cancel_order, name='cancel_order'),
     path('<uuid:order_id>/pay/', api.process_payment, name='process_payment'),
+    path('user/<uuid:user_id>/completed/', api.user_completed_orders, name='user_completed_orders'),
     
     # Admin endpoints
     path('admin/list/', api.admin_order_list, name='admin_order_list'),

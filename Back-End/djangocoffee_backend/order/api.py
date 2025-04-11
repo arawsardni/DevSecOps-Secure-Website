@@ -339,4 +339,29 @@ def top_products_report(request):
         total_revenue=Sum(F('price') * F('quantity'))
     ).order_by('-total_quantity')[:limit]
     
-    return Response(top_products) 
+    return Response(top_products)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_completed_orders(request, user_id):
+    try:
+        # Pastikan user hanya bisa melihat pesanannya sendiri
+        if request.user.id != user_id:
+            return Response({'error': 'Tidak diizinkan melihat pesanan user lain'}, 
+                          status=status.HTTP_403_FORBIDDEN)
+        
+        # Ambil semua pesanan yang sudah selesai
+        orders = Order.objects.filter(
+            user_id=user_id,
+            status='completed'
+        ).prefetch_related(
+            'items',
+            'items__product'
+        ).order_by('-created_at')
+
+        # Serialize data pesanan dengan OrderDetailSerializer
+        serializer = OrderDetailSerializer(orders, many=True)
+        return Response(serializer.data)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 

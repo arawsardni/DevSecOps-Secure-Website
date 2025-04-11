@@ -10,6 +10,7 @@ from .serializers import (
     UserSerializer,
     UserUpdateSerializer
 )
+import json
 
 User = get_user_model()
 
@@ -74,3 +75,34 @@ def update_profile(request):
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response(UserSerializer(request.user).data)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def update_addresses(request):
+    """
+    Update addresses list. Expected format:
+    {
+        "addresses": [
+            {"label": "Home", "address": "123 Main St", "note": "Near park", "coordinates": {"lat": 123, "lng": 456}},
+            {"label": "Work", "address": "456 Office Rd", "note": "", "coordinates": {"lat": 789, "lng": 012}}
+        ],
+        "mainAddress": 0
+    }
+    """
+    addresses = request.data.get('addresses', [])
+    main_address = request.data.get('mainAddress')
+    
+    # Simpan addresses
+    request.user.user_addresses = json.dumps(addresses)
+    
+    # Update main address jika tersedia
+    if main_address is not None:
+        request.user.mainAddress = main_address
+    
+    request.user.save()
+    
+    return Response({
+        'success': True,
+        'addresses': request.user.get_addresses(),
+        'mainAddress': request.user.mainAddress
+    })

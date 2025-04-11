@@ -5,7 +5,12 @@ import { TextInput, Textarea } from "flowbite-react";
 import MapPicker from "./MapPicker";
 import { Trash2, Pencil, X } from "lucide-react";
 
-export default function AddressSection({ addresses, setAddresses, mainAddress, setMainAddress }) {
+export default function AddressSection({
+  addresses,
+  setAddresses,
+  mainAddress,
+  setMainAddress,
+}) {
   const [newAddress, setNewAddress] = useState(null);
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState(null);
@@ -28,13 +33,16 @@ export default function AddressSection({ addresses, setAddresses, mainAddress, s
   };
 
   const saveNewAddress = () => {
-    if (!newAddress.label || !newAddress.address) return alert("Lengkapi nama & alamat.");
+    if (!newAddress.label || !newAddress.address)
+      return alert("Lengkapi nama & alamat.");
     setAddresses([...addresses, newAddress]);
     setNewAddress(null);
   };
 
   const saveEdit = () => {
-    const updated = addresses.map((addr, idx) => (idx === editIndex ? editData : addr));
+    const updated = addresses.map((addr, idx) =>
+      idx === editIndex ? editData : addr
+    );
     setAddresses(updated);
     setEditIndex(null);
     setEditData(null);
@@ -46,7 +54,9 @@ export default function AddressSection({ addresses, setAddresses, mainAddress, s
   };
 
   const confirmDelete = (idx) => {
-    const confirm = window.confirm("Apakah kamu yakin ingin menghapus alamat ini?");
+    const confirm = window.confirm(
+      "Apakah kamu yakin ingin menghapus alamat ini?"
+    );
     if (confirm) {
       const updated = addresses.filter((_, i) => i !== idx);
       setAddresses(updated);
@@ -87,7 +97,9 @@ export default function AddressSection({ addresses, setAddresses, mainAddress, s
             <TextInput value={newAddress.address} disabled />
           </div>
           <div>
-            <label className="text-sm font-medium">Patokan Lokasi (Optional)</label>
+            <label className="text-sm font-medium">
+              Patokan Lokasi (Optional)
+            </label>
             <Textarea
               value={newAddress.note}
               onChange={(e) => handleInput("note", e.target.value)}
@@ -95,10 +107,16 @@ export default function AddressSection({ addresses, setAddresses, mainAddress, s
             />
           </div>
           <div className="flex justify-between items-center pt-2">
-            <button onClick={() => setNewAddress(null)} className="text-red-500 text-sm">
+            <button
+              onClick={() => setNewAddress(null)}
+              className="text-red-500 text-sm"
+            >
               Hapus
             </button>
-            <button onClick={saveNewAddress} className="bg-[#5A2E0D] text-white px-4 py-2 rounded-md">
+            <button
+              onClick={saveNewAddress}
+              className="bg-[#5A2E0D] text-white px-4 py-2 rounded-md"
+            >
               Simpan Alamat
             </button>
           </div>
@@ -107,12 +125,17 @@ export default function AddressSection({ addresses, setAddresses, mainAddress, s
 
       {/* List Existing */}
       {addresses.length > 0 && (
-        <p className="font-semibold text-sm text-gray-600">🗂️ Pilih Alamat Utama</p>
+        <p className="font-semibold text-sm text-gray-600">
+          🗂️ Pilih Alamat Utama
+        </p>
       )}
 
       {addresses.map((addr, idx) =>
         editIndex === idx ? (
-          <div key={idx} className="p-4 border border-yellow-500 rounded-lg space-y-2 bg-yellow-50">
+          <div
+            key={idx}
+            className="p-4 border border-yellow-500 rounded-lg space-y-2 bg-yellow-50"
+          >
             <div>
               <label className="text-sm font-medium">Nama</label>
               <TextInput
@@ -122,7 +145,10 @@ export default function AddressSection({ addresses, setAddresses, mainAddress, s
             </div>
             <div>
               <label className="text-sm font-medium">Alamat</label>
-              <TextInput value={editData.address} onChange={(e) => handleEditInput("address", e.target.value)} />
+              <TextInput
+                value={editData.address}
+                onChange={(e) => handleEditInput("address", e.target.value)}
+              />
             </div>
             <div>
               <label className="text-sm font-medium">Patokan Lokasi</label>
@@ -133,14 +159,23 @@ export default function AddressSection({ addresses, setAddresses, mainAddress, s
             </div>
             <div className="flex justify-between items-center pt-2">
               <div className="flex gap-4">
-                <button onClick={() => confirmDelete(idx)} className="text-red-600 flex items-center text-sm">
+                <button
+                  onClick={() => confirmDelete(idx)}
+                  className="text-red-600 flex items-center text-sm"
+                >
                   <Trash2 size={16} className="mr-1" /> Hapus
                 </button>
-                <button onClick={cancelEdit} className="text-gray-600 text-sm flex items-center">
+                <button
+                  onClick={cancelEdit}
+                  className="text-gray-600 text-sm flex items-center"
+                >
                   <X size={16} className="mr-1" /> Batal
                 </button>
               </div>
-              <button onClick={saveEdit} className="bg-green-600 text-white px-4 py-2 rounded-md">
+              <button
+                onClick={saveEdit}
+                className="bg-green-600 text-white px-4 py-2 rounded-md"
+              >
                 Simpan Perubahan
               </button>
             </div>
@@ -162,7 +197,9 @@ export default function AddressSection({ addresses, setAddresses, mainAddress, s
               <div>
                 <p className="font-semibold">🏠 {addr.label}</p>
                 <p className="text-sm text-gray-600">{addr.address}</p>
-                {addr.note && <p className="text-sm italic text-gray-400">📍 {addr.note}</p>}
+                {addr.note && (
+                  <p className="text-sm italic text-gray-400">📍 {addr.note}</p>
+                )}
               </div>
             </div>
             <button

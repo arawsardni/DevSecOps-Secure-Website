@@ -10,7 +10,9 @@ function LocationMarker({ onSelect }) {
   useMapEvents({
     click(e) {
       setPosition(e.latlng);
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${e.latlng.lat}&lon=${e.latlng.lng}&format=json`)
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${e.latlng.lat}&lon=${e.latlng.lng}&format=json`
+      )
         .then((res) => res.json())
         .then((data) => {
           onSelect(e.latlng, data.display_name);
@@ -35,8 +37,10 @@ export default function MapPicker({ onSelect }) {
       delete L.Icon.Default.prototype._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        iconRetinaUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        shadowUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
     })();
   }, []);
@@ -48,7 +52,12 @@ export default function MapPicker({ onSelect }) {
       center={[-7.956, 112.614]}
       zoom={16}
       scrollWheelZoom={true}
-      style={{ height: "300px", width: "100%", borderRadius: "12px", zIndex: 0 }}
+      style={{
+        height: "300px",
+        width: "100%",
+        borderRadius: "12px",
+        zIndex: 0,
+      }}
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <LocationMarker onSelect={onSelect} />
