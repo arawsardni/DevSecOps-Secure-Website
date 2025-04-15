@@ -39,6 +39,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+    
     // Periksa token dari localStorage
     const storedToken = localStorage.getItem("access_token");
     if (storedToken) {
@@ -47,12 +52,12 @@ export default function ProfilePage() {
       // Redirect ke halaman login jika tidak ada token
       router.push("/login");
     }
-  }, [router]);
+  }, [router, isClient]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!token) return;
+    if (!token || !isClient) return;
 
+    const fetchProfile = async () => {
       try {
         setLoading(true);
         const data = await getUserProfile(token);
@@ -78,7 +83,7 @@ export default function ProfilePage() {
     };
 
     fetchProfile();
-  }, [token, router]);
+  }, [token, router, isClient]);
 
   useEffect(() => {
     if (!user) return;
@@ -113,7 +118,7 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
-    if (!token) return;
+    if (!token || !isClient) return;
 
     try {
       setLoading(true);
@@ -146,14 +151,17 @@ export default function ProfilePage() {
       setUser(updatedProfile);
       localStorage.setItem("user_data", JSON.stringify(updatedProfile));
 
-      // Trigger custom event untuk memberi tahu komponen lain bahwa user data berubah
-      const userLoginEvent = new CustomEvent("user-login", {
-        detail: { userData: updatedProfile },
-      });
-      window.dispatchEvent(userLoginEvent);
+      // Hanya jalankan kode window saat di client side
+      if (isClient) {
+        // Trigger custom event untuk memberi tahu komponen lain bahwa user data berubah
+        const userLoginEvent = new CustomEvent("user-login", {
+          detail: { userData: updatedProfile },
+        });
+        window.dispatchEvent(userLoginEvent);
 
-      // Trigger storage event untuk memastikan semua komponen diperbarui
-      localStorage.setItem("user_data_timestamp", Date.now().toString());
+        // Trigger storage event untuk memastikan semua komponen diperbarui
+        localStorage.setItem("user_data_timestamp", Date.now().toString());
+      }
 
       setIsDirty(false);
 
@@ -170,10 +178,12 @@ export default function ProfilePage() {
       localStorage.setItem("user_data", JSON.stringify(latestProfile));
 
       // Kirim event lagi dengan data terbaru
-      const finalUserLoginEvent = new CustomEvent("user-login", {
-        detail: { userData: latestProfile },
-      });
-      window.dispatchEvent(finalUserLoginEvent);
+      if (isClient) {
+        const finalUserLoginEvent = new CustomEvent("user-login", {
+          detail: { userData: latestProfile },
+        });
+        window.dispatchEvent(finalUserLoginEvent);
+      }
 
       setForm({
         name: latestProfile.name || "",
@@ -249,6 +259,15 @@ export default function ProfilePage() {
         <p className="text-lg">Memuat data profil...</p>
       </div>
     );
+  
+  // Tampilkan loading screen saat di server side rendering
+  if (!isClient) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 text-center">
+        <p className="text-lg">Memuat data profil...</p>
+      </div>
+    );
+  }
 
   if (error && !user)
     return (
@@ -259,7 +278,13 @@ export default function ProfilePage() {
           </h2>
           <p className="text-red-500 mb-4">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.location.reload();
+              } else {
+                router.refresh();
+              }
+            }}
             className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
           >
             Coba Lagi
@@ -357,6 +382,12 @@ export default function ProfilePage() {
             className="bg-[#8B4513] text-white px-4 py-2 rounded-lg hover:bg-[#5A2E0D] transition-colors mr-2"
           >
             Lihat Riwayat Pesanan
+          </button>
+          <button
+            onClick={() => router.push("/profile/PurchaseHistory")}
+            className="bg-[#8B4513] text-white px-4 py-2 rounded-lg hover:bg-[#5A2E0D] transition-colors mr-2"
+          >
+            Produk yang Pernah Dibeli
           </button>
           <button
             onClick={() => router.push("/profile/Reviews")}

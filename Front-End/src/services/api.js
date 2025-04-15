@@ -1,4 +1,9 @@
-const API_URL = "http://localhost:8000/api";
+// Menggunakan URL yang berbeda berdasarkan environment
+// - Di browser pengguna: http://localhost:8000/api
+// - Di dalam container: http://backend:8000/api
+const API_URL = typeof window !== 'undefined' 
+  ? (process.env.NEXT_PUBLIC_BROWSER_API_URL || "http://localhost:8000/api") 
+  : (process.env.NEXT_PUBLIC_API_URL || "http://backend:8000/api");
 
 export const getProducts = async (params = {}) => {
   const queryParams = new URLSearchParams(params);
@@ -102,21 +107,68 @@ export const getCategories = async () => {
 };
 
 // Auth API
-export const loginUser = async (email, password) => {
-  const response = await fetch(`${API_URL}/auth/login/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Login failed");
+export const loginUser = async (credentials) => {
+  try {
+    // Extract email and password correctly to avoid nested objects
+    const { email, password } = credentials;
+    
+    // Ensure we're sending a properly formatted object
+    const loginData = { email, password };
+    
+    console.log('Logging in user:', email);
+    console.log('Login payload:', JSON.stringify(loginData));
+    
+    const response = await fetch(`${API_URL}/auth/login/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(loginData)
+    });
+    
+    // Get the raw text first for better debugging
+    const responseText = await response.text();
+    console.log('Raw response:', responseText);
+    
+    // Try to parse as JSON
+    let data;
+    let ok = response.ok;
+    
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Error parsing response:", error);
+      throw new Error("Server returned invalid response");
+    }
+    
+    if (!ok) {
+      // Extract error message from response
+      let errorMessage = 'Login failed';
+      
+      if (data) {
+        // Check all possible error field names
+        if (data.detail) {
+          errorMessage = typeof data.detail === 'object' 
+            ? JSON.stringify(data.detail) 
+            : data.detail;
+        } else if (data.error) {
+          errorMessage = data.error;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.non_field_errors) {
+          errorMessage = data.non_field_errors[0];
+        }
+      }
+      
+      console.error('Login error details:', data);
+      throw new Error(errorMessage);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
   }
-
-  return response.json();
 };
 
 export const registerUser = async (userData) => {
@@ -305,18 +357,10 @@ export const getPurchasedProducts = async (userId) => {
       return [];
     }
 
-    // Cek apakah user yang login sesuai dengan userId yang diminta
-    const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
-    if (userData.id !== userId) {
-      console.warn("User ID tidak sesuai dengan user yang login");
-      return [];
-    }
-
     console.log("Fetching purchased products for user:", userId);
-    console.log("Using token:", token);
-
-    // Perbaiki URL endpoint dari /order/ menjadi /orders/
-    const apiUrl = `${API_URL}/orders/user/${userId}/completed/`;
+    
+    // Gunakan endpoint baru untuk produk yang pernah dibeli
+    const apiUrl = `${API_URL}/orders/user/${userId}/purchased-products/`;
     console.log("API URL:", apiUrl);
 
     const response = await fetch(apiUrl, {
@@ -328,71 +372,100 @@ export const getPurchasedProducts = async (userId) => {
 
     // Log response status dan headers
     console.log("Response status:", response.status);
-    console.log(
-      "Response headers:",
-      Object.fromEntries(response.headers.entries())
-    );
 
     if (!response.ok) {
       // Coba baca response sebagai text untuk melihat apa yang sebenarnya dikembalikan
       const responseText = await response.text();
       console.error("Error response text:", responseText);
 
-      // Coba parse sebagai JSON jika mungkin
+      // Jika API gagal, fallback ke metode lama
+      console.log("API gagal, mencoba metode alternatif untuk mendapatkan produk...");
+      const oldApiUrl = `${API_URL}/orders/user/${userId}/completed/`;
+      
       try {
-        const errorData = JSON.parse(responseText);
-        throw new Error(errorData.detail || "Gagal mengambil data pesanan");
-      } catch (parseError) {
-        throw new Error(
-          `Server error: ${response.status} ${response.statusText}`
-        );
-      }
-    }
-
-    const orders = await response.json();
-    console.log("Orders from backend:", orders);
-
-    // Jika tidak ada pesanan yang selesai, coba ambil dari localStorage
-    if (!orders || orders.length === 0) {
-      console.log("Tidak ada pesanan dari backend, mencoba dari localStorage");
-      return getLocalPurchasedProducts(userId);
-    }
-
-    // Ekstrak semua produk yang telah dibeli
-    const purchasedProducts = [];
-    orders.forEach((order) => {
-      if (order.items && Array.isArray(order.items)) {
-        order.items.forEach((item) => {
-          if (item.product) {
-            // Tambahkan ke daftar jika belum ada
-            const existingProduct = purchasedProducts.find(
-              (p) => p.id === item.product.id
-            );
-            if (!existingProduct) {
-              purchasedProducts.push({
-                id: item.product.id,
-                name: item.product.name,
-                title: item.product.name,
-                price: item.price,
-                image: item.product.image_url || item.product.image,
-                size: item.size,
-                quantity: item.quantity,
-                product_id: item.product.id,
-              });
-            }
-          }
+        const oldResponse = await fetch(oldApiUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
+        
+        if (!oldResponse.ok) {
+          throw new Error(`Error dengan status: ${oldResponse.status}`);
+        }
+        
+        const orders = await oldResponse.json();
+        return processCompletedOrdersForProducts(orders);
+      } catch (oldApiError) {
+        console.error("Error dengan API alternatif:", oldApiError);
+        // Fallback ke localStorage jika kedua API gagal
+        return getLocalPurchasedProducts(userId);
       }
-    });
+    }
 
-    console.log("Processed purchased products:", purchasedProducts);
-    return purchasedProducts;
+    const products = await response.json();
+    console.log("Purchased products from API:", products);
+    
+    // Process image URLs in the products
+    const processedProducts = products.map(product => {
+      // Create a copy of the product to avoid modifying the original
+      const processedProduct = { ...product };
+      
+      // Process image URLs
+      if (processedProduct.image) {
+        processedProduct.image = processImageUrl(processedProduct.image);
+      }
+      
+      if (processedProduct.image_url) {
+        processedProduct.image_url = processImageUrl(processedProduct.image_url);
+      }
+      
+      return processedProduct;
+    });
+    
+    return processedProducts;
   } catch (error) {
     console.error("Error fetching purchased products:", error);
     // Fallback ke localStorage jika API gagal
     return getLocalPurchasedProducts(userId);
   }
 };
+
+// Helper function to process image URLs
+function processImageUrl(url) {
+  if (!url) return null;
+  
+  // If already a complete URL, return as is
+  if (url.startsWith('http')) {
+    return url;
+  }
+  
+  try {
+    // Get the base URL (without /api)
+    const apiUrl = API_URL;
+    const baseUrl = typeof window !== 'undefined' 
+      ? (process.env.NEXT_PUBLIC_BROWSER_BASE_URL || apiUrl.replace('/api', '')) 
+      : (process.env.NEXT_PUBLIC_BASE_URL || apiUrl.replace('/api', ''));
+    
+    // Clean the URL path
+    let cleanUrl = url;
+    if (cleanUrl.startsWith('/api/')) {
+      cleanUrl = cleanUrl.substring(4);
+    }
+    
+    // Ensure it has the proper /media prefix if needed
+    if (!cleanUrl.startsWith('/media/') && !cleanUrl.startsWith('/')) {
+      cleanUrl = '/media/' + cleanUrl;
+    } else if (!cleanUrl.startsWith('/')) {
+      cleanUrl = '/' + cleanUrl;
+    }
+    
+    return `${baseUrl}${cleanUrl}`;
+  } catch (error) {
+    console.error('Error processing image URL:', error, url);
+    return url; // Return original if processing fails
+  }
+}
 
 // Fungsi helper untuk mengambil produk dari localStorage
 const getLocalPurchasedProducts = (userId) => {
@@ -446,131 +519,259 @@ const getLocalPurchasedProducts = (userId) => {
   }
 };
 
+// Product Reviews API
 export const getProductReviews = async (productId) => {
   try {
-    // Ambil dari localStorage
+    // Ensure productId is valid
+    if (!productId) {
+      console.warn("Invalid product ID for reviews");
+      return [];
+    }
+    
+    console.log("Fetching reviews for product ID:", productId);
+    
+    // Connect to backend API
+    const response = await fetch(`${API_URL}/reviews/products/${productId}/`);
+    
+    if (!response.ok) {
+      console.error("Failed to fetch reviews:", response.status);
+      // Fallback to localStorage if API fails
+      return getProductReviewsFromLocalStorage(productId);
+    }
+    
+    const responseData = await response.json();
+    
+    // Format the backend response to match our frontend format
+    const reviews = responseData.reviews.map(review => ({
+      id: review.id,
+      productId: review.product,
+      userId: review.user,
+      user: review.user_detail?.name || "Anonymous",
+      rating: review.rating,
+      comment: review.comment,
+      createdAt: review.created_at,
+      updatedAt: review.updated_at,
+      avatar: review.user_detail?.avatar || null,
+      isApproved: review.is_approved,
+      isFeatured: review.is_featured,
+      likesCount: review.likes_count
+    }));
+    
+    console.log(`Found ${reviews.length} reviews for product ${productId}`);
+    
+    // Also save to localStorage for offline access
+    try {
+      const allReviews = JSON.parse(localStorage.getItem("product_reviews") || "[]");
+      
+      // Remove any existing reviews for this product
+      const filteredReviews = allReviews.filter(review => 
+        String(review.productId) !== String(productId)
+      );
+      
+      // Add the new reviews
+      const updatedReviews = [...filteredReviews, ...reviews];
+      localStorage.setItem("product_reviews", JSON.stringify(updatedReviews));
+    } catch (err) {
+      console.error("Error saving reviews to localStorage:", err);
+    }
+    
+    return reviews;
+  } catch (error) {
+    console.error("Error fetching product reviews:", error);
+    // Fallback to localStorage
+    return getProductReviewsFromLocalStorage(productId);
+  }
+};
+
+// Helper function to get reviews from localStorage (fallback)
+const getProductReviewsFromLocalStorage = (productId) => {
+  try {
+    // Get from localStorage
     const reviewsData = localStorage.getItem("product_reviews");
     let reviews = reviewsData ? JSON.parse(reviewsData) : [];
 
-    // Konversi productId ke string untuk perbandingan yang konsisten
+    // Convert productId to string for consistent comparison
     const targetId = String(productId);
-    console.log("Fetching reviews for product ID:", targetId);
+    console.log("Fetching reviews from localStorage for product ID:", targetId);
 
-    // Filter review berdasarkan productId dengan perbandingan yang lebih fleksibel
-    const productReviews = reviews.filter((review) => {
-      // Cek ID langsung
+    // Filter review based on productId
+    return reviews.filter(review => {
+      // Check direct ID match
       if (String(review.productId) === targetId) return true;
 
-      // Cek ID alternatif
-      if (
-        review.alternate_product_ids &&
-        Array.isArray(review.alternate_product_ids)
-      ) {
+      // Check alternative IDs
+      if (review.alternate_product_ids && Array.isArray(review.alternate_product_ids)) {
         if (review.alternate_product_ids.includes(targetId)) return true;
       }
 
-      // Cek alternate_ids
+      // Check alternate_ids
       if (review.alternate_ids && Array.isArray(review.alternate_ids)) {
         if (review.alternate_ids.includes(targetId)) return true;
       }
 
-      // Cek format lama
-      if (String(review.product_id) === targetId) return true;
-
       return false;
     });
-
-    console.log(
-      `Found ${productReviews.length} reviews for product ${targetId}`
-    );
-    return productReviews;
   } catch (error) {
-    console.error("Error fetching product reviews:", error);
+    console.error("Error getting reviews from localStorage:", error);
     return [];
   }
 };
 
 export const addProductReview = async (reviewData) => {
   try {
-    // Validasi data review
-    if (!reviewData.productId || !reviewData.userId || !reviewData.rating) {
-      throw new Error("Data review tidak lengkap");
+    // Validate review data
+    if (!reviewData.productId || !reviewData.rating) {
+      throw new Error("Incomplete review data");
     }
-
-    // Standardisasi productId sebagai string
-    reviewData.productId = String(reviewData.productId);
+    
+    // Get user token
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      throw new Error("You must be logged in to leave a review");
+    }
+    
     console.log("Adding review for product ID:", reviewData.productId);
-
-    // Tambahkan avatar pengguna jika tersedia
+    
+    // Format data for the backend
+    const backendData = {
+      product: reviewData.productId,
+      rating: reviewData.rating,
+      comment: reviewData.comment || ""
+    };
+    
+    // Post to the backend
+    const response = await fetch(`${API_URL}/reviews/create/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(backendData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || errorData.error || "Failed to submit review");
+    }
+    
+    // Get the response with the created review
+    const createdReview = await response.json();
+    
+    // Format for frontend use
+    const formattedReview = {
+      id: createdReview.id,
+      productId: createdReview.product,
+      userId: createdReview.user,
+      user: createdReview.user_detail?.name || "Anonymous",
+      rating: createdReview.rating,
+      comment: createdReview.comment,
+      createdAt: createdReview.created_at,
+      updatedAt: createdReview.updated_at,
+      avatar: createdReview.user_detail?.avatar || null,
+      isApproved: createdReview.is_approved,
+      isFeatured: createdReview.is_featured,
+      likesCount: createdReview.likes_count
+    };
+    
+    // Also save to localStorage as a backup
     try {
-      const userData = JSON.parse(localStorage.getItem("user_data"));
-      if (userData && userData.avatar) {
-        reviewData.avatar = userData.avatar;
-      }
-    } catch (err) {
-      console.error("Error adding avatar to review:", err);
-    }
-
-    // Tambahkan ke cache produk untuk konsistensi ID
-    try {
-      const productsCache = JSON.parse(
-        localStorage.getItem("products_cache") || "[]"
+      const reviewsData = localStorage.getItem("product_reviews");
+      let reviews = reviewsData ? JSON.parse(reviewsData) : [];
+      
+      // Remove any existing review by this user for this product
+      reviews = reviews.filter(review => 
+        !(String(review.productId) === String(reviewData.productId) && 
+          String(review.userId) === String(reviewData.userId))
       );
-      // Catat bahwa product ID ini sudah direview
-      localStorage.setItem("last_reviewed_product_id", reviewData.productId);
-
-      // Cari ID produk alternatif dari cache jika ada
-      const cachedProduct = productsCache.find(
-        (p) =>
-          String(p.id) === reviewData.productId ||
-          String(p.product_id) === reviewData.productId
-      );
-
-      if (cachedProduct) {
-        // Simpan product_ids alternatif dalam review untuk matching yang lebih baik nanti
-        reviewData.alternate_ids = [
-          String(cachedProduct.id || ""),
-          String(cachedProduct.product_id || ""),
-        ].filter((id) => id);
-      }
+      
+      // Add the new review
+      reviews.push(formattedReview);
+      localStorage.setItem("product_reviews", JSON.stringify(reviews));
     } catch (err) {
-      console.error("Error checking product cache for review:", err);
+      console.error("Error saving review to localStorage:", err);
     }
-
-    // Ambil review yang sudah ada
-    const reviewsData = localStorage.getItem("product_reviews");
-    let reviews = reviewsData ? JSON.parse(reviewsData) : [];
-
-    // Cek apakah user sudah pernah mereview produk ini
-    const existingReviewIndex = reviews.findIndex(
-      (review) =>
-        review.productId === reviewData.productId &&
-        review.userId === reviewData.userId
-    );
-
-    // Jika sudah ada, update review
-    if (existingReviewIndex !== -1) {
-      reviews[existingReviewIndex] = {
-        ...reviews[existingReviewIndex],
-        ...reviewData,
-        updatedAt: new Date().toISOString(),
-      };
-    } else {
-      // Jika belum, tambahkan review baru
-      reviews.push({
-        ...reviewData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    }
-
-    // Simpan kembali ke localStorage
-    localStorage.setItem("product_reviews", JSON.stringify(reviews));
-
-    return reviewData;
+    
+    return formattedReview;
   } catch (error) {
     console.error("Error adding product review:", error);
     throw error;
   }
+};
+
+export const createTestOrders = async (token) => {
+  try {
+    if (!token) {
+      throw new Error("Token tidak ditemukan");
+    }
+
+    const response = await fetch(`${API_URL}/orders/create-test-orders/`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    // Log for debugging
+    console.log("Create test orders response status:", response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Error response:", errorText);
+      let errorMessage = "Gagal membuat pesanan test";
+      
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.error || errorData.detail || errorMessage;
+      } catch (e) {
+        // If not JSON, use the raw text
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error creating test orders:", error);
+    throw error;
+  }
+};
+
+// Helper function to process completed orders and extract unique products
+const processCompletedOrdersForProducts = (orders) => {
+  // Ekstrak semua produk yang telah dibeli
+  const purchasedProducts = [];
+  const productIds = new Set();
+  
+  orders.forEach((order) => {
+    if (order.items && Array.isArray(order.items)) {
+      order.items.forEach((item) => {
+        if (item.product && !productIds.has(item.product.id)) {
+          productIds.add(item.product.id);
+          
+          // Process image URLs before adding to list
+          let image = item.product.image_url || item.product.image;
+          if (image) {
+            image = processImageUrl(image);
+          }
+          
+          purchasedProducts.push({
+            id: item.product.id,
+            name: item.product.name,
+            title: item.product.name,
+            price: item.price,
+            image: image,
+            image_url: image,
+            size: item.size,
+            quantity: item.quantity,
+            product_id: item.product.id,
+          });
+        }
+      });
+    }
+  });
+  
+  console.log("Processed purchased products from orders:", purchasedProducts);
+  return purchasedProducts;
 };

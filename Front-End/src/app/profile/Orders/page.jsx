@@ -10,52 +10,100 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isClearing, setIsClearing] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+    
     const token = localStorage.getItem("access_token");
     if (!token) {
       router.push("/login");
       return;
     }
 
-    const userId = localStorage.getItem("user_id");
-    const ordersKey = userId ? `orders_${userId}` : "orders";
-    const savedOrders = localStorage.getItem(ordersKey);
-
-    if (savedOrders) {
+    const fetchOrders = async () => {
+      setLoading(true);
+      setError(null);
+      
       try {
-        const ordersData = JSON.parse(savedOrders);
-        console.log("Orders data loaded for user:", userId);
-        console.log("Total orders found:", ordersData.length);
+        // Mengambil data pesanan dari API
+        const { getUserOrders } = await import('@/services/orderService');
+        const ordersData = await getUserOrders(token);
+        console.log("Orders data loaded from API:", ordersData);
+        
+        if (ordersData && ordersData.length > 0) {
+          // Standardize order data format
+          const processedOrders = ordersData.map(order => {
+            return {
+              ...order,
+              orderNumber: order.order_number,
+              createdAt: order.created_at || new Date().toISOString(),
+              items: order.items || [],
+              totalAmount: order.total_amount || 0
+            };
+          });
 
-        if (ordersData.length > 0) {
-          console.log("First order data:", ordersData[0]);
-
-          if (ordersData[0].items && ordersData[0].items.length > 0) {
-            console.log("First order's first item:", ordersData[0].items[0]);
-            console.log("First item properties:", {
-              title: ordersData[0].items[0].title,
-              product_name: ordersData[0].items[0].product_name,
-              name: ordersData[0].items[0].name,
-              product: ordersData[0].items[0].product,
-            });
-          }
+          // Sort orders by date (newest first)
+          const sortedOrders = processedOrders.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+          
+          setOrders(sortedOrders);
+        } else {
+          setOrders([]);
         }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        
+        // Fallback ke localStorage jika API gagal
+        try {
+          console.log("Falling back to localStorage for orders");
+          const userId = localStorage.getItem("user_id");
+          const ordersKey = userId ? `orders_${userId}` : "orders";
+          const savedOrders = localStorage.getItem(ordersKey);
+          
+          if (savedOrders) {
+            const ordersData = JSON.parse(savedOrders);
+            console.log("Orders loaded from localStorage:", ordersData.length);
+            
+            // Standardize order data format
+            const processedOrders = ordersData.map(order => {
+              return {
+                ...order,
+                orderNumber: order.order_number || order.orderNumber,
+                status: order.status || "pending",
+                createdAt: order.created_at || order.createdAt || new Date().toISOString()
+              };
+            });
 
-        // Urutkan pesanan dari yang terbaru
-        const sortedOrders = ordersData.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
-        setOrders(sortedOrders);
-      } catch (err) {
-        console.error("Error parsing orders data:", err);
-        setError("Gagal memuat data pesanan");
+            // Sort orders by date (newest first)
+            const sortedOrders = processedOrders.sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
+            
+            setOrders(sortedOrders);
+          }
+        } catch (err) {
+          console.error("Error parsing localStorage orders:", err);
+          setError("Gagal memuat riwayat pesanan: " + error.message);
+        }
+        
+        setLoading(false);
       }
-    }
-    setLoading(false);
-  }, [router]);
+    };
+    
+    fetchOrders();
+  }, [router, isClient]);
 
   const clearAllOrders = () => {
+    if (!isClient) return;
+    
     setIsClearing(true);
     try {
       // Hapus semua key yang dimulai dengan 'orders_'
@@ -103,6 +151,8 @@ export default function OrdersPage() {
   };
 
   const handleCancelOrder = (orderNumber) => {
+    if (!isClient) return;
+    
     if (window.confirm("Apakah Anda yakin ingin membatalkan pesanan ini?")) {
       const userId = localStorage.getItem("user_id");
       const ordersKey = userId ? `orders_${userId}` : "orders";
@@ -130,12 +180,33 @@ export default function OrdersPage() {
   };
 
   const handlePayOrder = (order) => {
-    // Simpan informasi pesanan ke localStorage untuk halaman pembayaran
-    localStorage.setItem("pending_payment", JSON.stringify(order));
-    router.push(
-      `/Checkout/PaymentConfirmation?orderNumber=${order.orderNumber}`
-    );
+    if (!isClient) return;
+    
+    // Get the correct order number format
+    const orderNumber = order.order_number || order.orderNumber;
+    
+    if (!orderNumber) {
+      console.error("No valid order number found:", order);
+      alert("Tidak dapat melanjutkan pembayaran: nomor pesanan tidak valid");
+      return;
+    }
+    
+    // Save order to sessionStorage for the payment page
+    sessionStorage.setItem("order", JSON.stringify(order));
+    
+    // Navigate to payment confirmation page
+    router.push(`/Checkout/PaymentConfirmation?order=${orderNumber}`);
   };
+
+  if (!isClient) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <p>Memuat riwayat pesanan...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -160,6 +231,15 @@ export default function OrdersPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Riwayat Pesanan</h1>
+
+      <div className="mb-4">
+        <button
+          onClick={() => router.push("/profile/PurchaseHistory")}
+          className="px-4 py-2 bg-[#8B4513] text-white rounded hover:bg-[#5A2E0D] transition-colors"
+        >
+          Lihat Produk yang Pernah Dibeli
+        </button>
+      </div>
 
       {orders.length > 0 ? (
         <>

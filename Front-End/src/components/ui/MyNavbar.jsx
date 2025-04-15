@@ -135,7 +135,9 @@ export function MyNavbar() {
     }
 
     // Perbaiki path media
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiUrl = typeof window !== 'undefined'
+      ? (process.env.NEXT_PUBLIC_BROWSER_API_URL || "http://localhost:8000")
+      : (process.env.NEXT_PUBLIC_API_URL || "http://backend:8000");
     console.log("API URL:", apiUrl);
 
     // Hapus '/api' jika ada di awal path

@@ -137,7 +137,7 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         total_amount = 0
         for item_data in items_data:
             product = item_data['product']
-            quantity = item_data['quantity']
+            quantity = int(item_data['quantity'])  # Ensure quantity is an integer
             
             # Validasi stok
             if product.stock < quantity:
@@ -145,7 +145,7 @@ class CreateOrderSerializer(serializers.ModelSerializer):
                     f"Stok tidak cukup untuk {product.name}. Tersedia: {product.stock}"
                 )
             
-            # Tambahkan ke total
+            # Tambahkan ke total - ensure both are correct types
             total_amount += product.price * quantity
         
         # Tambahkan biaya pengiriman jika delivery
@@ -155,7 +155,7 @@ class CreateOrderSerializer(serializers.ModelSerializer):
             total_amount += delivery_fee
         
         # Hitung diskon dari poin
-        points_used = validated_data.get('points_used', 0)
+        points_used = validated_data.pop('points_used', 0)  # Pop to avoid duplicate
         discount_amount = points_used // 10  # 10 poin = 1000 rupiah
         total_amount -= discount_amount
         
@@ -163,7 +163,8 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         total_amount = max(total_amount, 0)
         
         # Hitung poin yang didapat (1% dari total belanja)
-        points_earned = int(total_amount * 0.01)
+        # Convert to integer first to avoid Decimal * float issue
+        points_earned = int(float(total_amount) * 0.01)
         
         # Buat order
         order = Order.objects.create(
@@ -179,14 +180,16 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         # Buat order items dan kurangi stok
         for item_data in items_data:
             product = item_data['product']
-            quantity = item_data['quantity']
+            quantity = int(item_data['quantity'])  # Ensure quantity is an integer
             
             # Buat order item
             OrderItem.objects.create(
                 order=order,
                 product=product,
                 price=product.price,
-                **item_data
+                quantity=quantity,  # Use the converted integer quantity
+                size=item_data.get('size'),
+                special_instructions=item_data.get('special_instructions', '')
             )
             
             # Kurangi stok

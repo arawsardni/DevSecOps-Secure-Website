@@ -10,11 +10,13 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
+    setIsClient(true);
     // Cek jika user sudah login
-    if (localStorage.getItem("access_token")) {
+    if (typeof window !== 'undefined' && localStorage.getItem("access_token")) {
       router.push("/");
     }
   }, [router]);
@@ -31,23 +33,34 @@ export default function LoginForm() {
     }
 
     try {
-      const data = await loginUser(email, password);
+      // Format credentials as expected by Django REST framework
+      const credentials = {
+        email: email,
+        password: password
+      };
+      
+      console.log("Sending login credentials:", credentials);
+      const data = await loginUser(credentials);
+
+      console.log("Login successful:", data);
 
       // Simpan token dan user data
-      localStorage.setItem("access_token", data.access);
-      localStorage.setItem("refresh_token", data.refresh);
-      localStorage.setItem("user_data", JSON.stringify(data.user));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("access_token", data.access);
+        localStorage.setItem("refresh_token", data.refresh);
+        localStorage.setItem("user_data", JSON.stringify(data.user));
 
-      // Simpan user_id untuk mengidentifikasi cart
-      if (data.user && data.user.id) {
-        localStorage.setItem("user_id", data.user.id);
+        // Simpan user_id untuk mengidentifikasi cart
+        if (data.user && data.user.id) {
+          localStorage.setItem("user_id", data.user.id);
+        }
+
+        // Trigger custom event untuk memperbarui UI
+        const userLoginEvent = new CustomEvent("user-login", {
+          detail: { userData: data.user },
+        });
+        window.dispatchEvent(userLoginEvent);
       }
-
-      // Trigger custom event untuk memperbarui UI
-      const userLoginEvent = new CustomEvent("user-login", {
-        detail: { userData: data.user },
-      });
-      window.dispatchEvent(userLoginEvent);
 
       router.push("/");
     } catch (err) {

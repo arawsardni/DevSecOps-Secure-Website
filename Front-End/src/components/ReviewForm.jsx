@@ -21,7 +21,7 @@ export default function ReviewForm({
     setError(null);
     setSuccess(false);
 
-    // Validasi input
+    // Validate input
     if (rating < 1 || rating > 5) {
       setError("Rating harus antara 1-5");
       setIsSubmitting(false);
@@ -35,46 +35,40 @@ export default function ReviewForm({
     }
 
     try {
+      // Check for authentication
+      const token = localStorage.getItem("access_token");
       const userId = localStorage.getItem("user_id");
-      if (!userId) throw new Error("Silakan login terlebih dahulu");
-
-      // Get user data
-      let user = "Pengguna";
-      try {
-        const userData = JSON.parse(localStorage.getItem("user_data"));
-        if (userData && userData.name) {
-          user = userData.name;
-        }
-      } catch (err) {
-        console.error("Error parsing user data:", err);
+      
+      if (!token || !userId) {
+        throw new Error("Silakan login terlebih dahulu untuk memberikan review");
       }
 
+      // Create review data
       const reviewData = {
-        productId,
-        userId,
-        user,
+        productId, // This is the product ID
+        userId,    // This is saved for localStorage backup
         rating: Number(rating),
         comment,
-        alternate_product_ids: originalProduct
-          ? [originalProduct.id, originalProduct.product_id]
-              .filter(Boolean)
-              .map(String)
-          : [],
       };
 
-      await addProductReview(reviewData);
-
+      // Send review to backend
+      const submittedReview = await addProductReview(reviewData);
+      
+      // Update UI
       setSuccess(true);
+      setSuccess(`Review berhasil ditambahkan! Terima kasih atas masukan Anda.`);
+      
+      // Reset form
       setRating(5);
       setComment("");
 
-      // Call the callback
+      // Call the callback to refresh parent component
       if (typeof onReviewSubmitted === "function") {
         onReviewSubmitted();
       }
     } catch (err) {
       console.error("Error submitting review:", err);
-      setError(err.message);
+      setError(err.message || "Gagal mengirim review. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -94,7 +88,7 @@ export default function ReviewForm({
 
       {success && (
         <div className="bg-green-50 text-green-700 p-3 rounded-lg mb-4">
-          Review berhasil ditambahkan!
+          {success}
         </div>
       )}
 

@@ -30,8 +30,17 @@ def register(request):
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def login(request):
+    print("Login request data:", request.data)
     serializer = LoginSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
+    
+    # Check serializer validation
+    if not serializer.is_valid():
+        print("Login serializer errors:", serializer.errors)
+        return Response(
+            {'detail': serializer.errors}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
     try:
         user = User.objects.get(email=serializer.validated_data['email'])
         if user.check_password(serializer.validated_data['password']):
@@ -41,14 +50,22 @@ def login(request):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             })
+        print("Invalid password for user:", serializer.validated_data['email'])
         return Response(
-            {'error': 'Invalid credentials'}, 
+            {'detail': 'Invalid credentials'}, 
             status=status.HTTP_401_UNAUTHORIZED
         )
     except ObjectDoesNotExist:
+        print("User not found:", serializer.validated_data['email'])
         return Response(
-            {'error': 'User not found'}, 
+            {'detail': 'User not found'}, 
             status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        print("Unexpected error in login:", str(e))
+        return Response(
+            {'detail': 'An unexpected error occurred'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 @api_view(['POST'])

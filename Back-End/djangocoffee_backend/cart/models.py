@@ -69,6 +69,8 @@ class CartItem(models.Model):
     
     def get_total_price(self):
         """Menghitung total harga untuk item ini (harga × kuantitas)"""
+        if self.product is None or self.product.price is None or self.quantity is None:
+            return 0
         return self.product.price * self.quantity
     
     def update_quantity(self, quantity):

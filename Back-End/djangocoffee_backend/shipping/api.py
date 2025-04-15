@@ -5,7 +5,6 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
-from address.models import City, Province
 from order.models import Order
 from .models import (
     ShippingProvider, ShippingMethod, ShippingRate,
@@ -72,8 +71,8 @@ def calculate_shipping_rates(request):
     serializer = ShippingRateCalculationSerializer(data=request.data)
     
     if serializer.is_valid():
-        origin_city_id = serializer.validated_data.get('origin_city')
-        destination_city_id = serializer.validated_data.get('destination_city')
+        origin_location = serializer.validated_data.get('origin_location')
+        destination_location = serializer.validated_data.get('destination_location')
         weight = serializer.validated_data.get('weight')
         shipping_method_id = serializer.validated_data.get('shipping_method')
         
@@ -89,8 +88,8 @@ def calculate_shipping_rates(request):
         
         # Query untuk shipping rates
         query = Q(
-            origin_city_id=origin_city_id,
-            destination_city_id=destination_city_id,
+            origin_location=origin_location,
+            destination_location=destination_location,
             is_active=True
         )
         
@@ -375,19 +374,19 @@ def admin_shipping_rates_list(request):
     Admin: Mendapatkan daftar tarif pengiriman
     """
     method_id = request.query_params.get('method')
-    origin_city = request.query_params.get('origin_city')
-    destination_city = request.query_params.get('destination_city')
+    origin_location = request.query_params.get('origin_location')
+    destination_location = request.query_params.get('destination_location')
     
     query = Q()
     
     if method_id:
         query &= Q(shipping_method_id=method_id)
     
-    if origin_city:
-        query &= Q(origin_city_id=origin_city)
+    if origin_location:
+        query &= Q(origin_location=origin_location)
     
-    if destination_city:
-        query &= Q(destination_city_id=destination_city)
+    if destination_location:
+        query &= Q(destination_location=destination_location)
     
     rates = ShippingRate.objects.filter(query)
     serializer = ShippingRateSerializer(rates, many=True)
