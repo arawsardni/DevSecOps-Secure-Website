@@ -68,17 +68,44 @@ export const addCartItem = async (productData) => {
     if (token) {
       // Coba simpan ke backend jika user sudah login
       try {
+        // Pastikan size ada dan valid
+        if (!productData.size) {
+          productData.size = "M"; // Default ke Medium jika tidak ada
+        }
+
+        // Buat objek data yang hanya berisi field yang diharapkan oleh backend
+        const apiData = {
+          product_id: productData.product_id,
+          quantity: productData.quantity || 1,
+          size: productData.size,
+          sugar: productData.sugar || "normal",
+          ice: productData.ice || "normal",
+          shots: productData.shots || 0,
+          special_instructions: productData.special_instructions || "",
+        };
+
+        console.log("API request to cart/add:", {
+          url: `${API_URL}/cart/add/`,
+          method: "POST",
+          data: apiData,
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
         const response = await fetch(`${API_URL}/cart/add/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(productData),
+          body: JSON.stringify(apiData),
         });
 
         if (!response.ok) {
-          throw new Error("Failed to add item to cart");
+          const errorText = await response.text();
+          console.error("Error response:", response.status, errorText);
+          throw new Error(
+            `Failed to add item to cart: ${response.status} ${errorText}`
+          );
         }
 
         const cartData = await response.json();

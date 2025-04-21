@@ -105,6 +105,16 @@ export default function ProductCard({
       console.log("Removed /api/ prefix, new URL:", cleanUrl);
     }
 
+    // Pastikan path media dimulai dengan /media jika tidak ada
+    if (!cleanUrl.startsWith("/media") && !cleanUrl.includes("/media/")) {
+      if (cleanUrl.startsWith("/")) {
+        cleanUrl = "/media" + cleanUrl;
+      } else {
+        cleanUrl = "/media/" + cleanUrl;
+      }
+      console.log("Added /media prefix, new URL:", cleanUrl);
+    }
+
     // Pastikan URL dimulai dengan garis miring
     if (!cleanUrl.startsWith("/")) {
       cleanUrl = "/" + cleanUrl;

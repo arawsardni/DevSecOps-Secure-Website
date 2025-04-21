@@ -32,7 +32,7 @@ export default function AddToCartButton({ product, customization, disabled }) {
       const productData = {
         product_id: product.id,
         quantity: customization.quantity || 1,
-        size: customization.size,
+        size: customization.size || "M",
         sugar: customization.sugar || "normal",
         ice: customization.ice || "normal",
         shots: customization.shots || 0,
@@ -45,6 +45,8 @@ export default function AddToCartButton({ product, customization, disabled }) {
           price: product.price,
         },
       };
+
+      console.log("Data yang dikirim ke API:", productData);
 
       // Gunakan cartService untuk menambahkan item ke keranjang
       await cartService.addCartItem(productData);
