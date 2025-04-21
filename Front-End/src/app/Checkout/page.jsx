@@ -11,19 +11,19 @@ import * as orderService from "@/services/orderService";
 // Helper function untuk format alamat
 const formatAddress = (addressValue) => {
   if (!addressValue) return "";
-  
+
   if (typeof addressValue === "string") {
     return addressValue;
   }
-  
+
   if (addressValue.address) {
     return addressValue.address;
   }
-  
+
   if (addressValue.id) {
     return `Alamat ID: ${addressValue.id}`;
   }
-  
+
   return JSON.stringify(addressValue);
 };
 
@@ -50,12 +50,12 @@ const paymentMethods = [
 
 export default function Checkout() {
   const router = useRouter();
-    const [selectedItem, setSelectedItem] = useState(null);
-    const [size, setSize] = useState("M");
-    const [notes, setNotes] = useState("");
-    const [pickupMethod, setPickupMethod] = useState("Pickup");
-    const [paymentMethod, setPaymentMethod] = useState("QRIS");
-    const [address, setAddress] = useState("");
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [size, setSize] = useState("M");
+  const [notes, setNotes] = useState("");
+  const [pickupMethod, setPickupMethod] = useState("Pickup");
+  const [paymentMethod, setPaymentMethod] = useState("QRIS");
+  const [address, setAddress] = useState("");
   const [cart, setCart] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
@@ -63,29 +63,30 @@ export default function Checkout() {
   const [error, setError] = useState(null);
   const [pickupLocation, setPickupLocation] = useState("");
 
-    useEffect(() => {
+  useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("checkout")) || {
       id: 1,
       quantity: 1,
     };
-        const product = products.find((p) => p.id === stored.id);
-        setSelectedItem({ ...product, quantity: stored.quantity || 1 });
-    }, []);
+    const product = products.find((p) => p.id === stored.id);
+    setSelectedItem({ ...product, quantity: stored.quantity || 1 });
+  }, []);
 
-    useEffect(() => {
-        const token = localStorage.getItem("access_token");
-        if (token) {
-        // Gunakan addressService untuk mendapatkan alamat default
-        addressService.getDefaultAddress(token)
-          .then(defaultAddress => {
-            if (defaultAddress) {
-              console.log("Default address from API:", defaultAddress);
-              setAddress(defaultAddress);
-            }
-          })
-          .catch(err => {
-            console.error("Error fetching default address:", err);
-          });
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      // Gunakan addressService untuk mendapatkan alamat default
+      addressService
+        .getDefaultAddress(token)
+        .then((defaultAddress) => {
+          if (defaultAddress) {
+            console.log("Default address from API:", defaultAddress);
+            setAddress(defaultAddress);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching default address:", err);
+        });
     }
   }, []);
 
@@ -96,11 +97,17 @@ export default function Checkout() {
     // Coba ambil dari API jika user login
     if (token) {
       try {
-        fetch("http://localhost:8000/api/cart/", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
+        fetch(
+          `${
+            process.env.NEXT_PUBLIC_BROWSER_API_URL ||
+            "http://10.34.100.143:8000/api"
+          }/cart/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
           .then((res) => {
             if (!res.ok) throw new Error("Failed to fetch cart from API");
             return res.json();
@@ -182,48 +189,73 @@ export default function Checkout() {
       try {
         const deliveryInfo = JSON.parse(savedDeliveryInfo);
         console.log("Delivery info loaded:", deliveryInfo);
-        console.log("Pickup method from localStorage:", deliveryInfo.pickupMethod);
-        console.log("Pickup location from localStorage:", deliveryInfo.pickupLocation);
+        console.log(
+          "Pickup method from localStorage:",
+          deliveryInfo.pickupMethod
+        );
+        console.log(
+          "Pickup location from localStorage:",
+          deliveryInfo.pickupLocation
+        );
         console.log("Address from localStorage:", deliveryInfo.address);
         console.log("Address ID from localStorage:", deliveryInfo.addressId);
 
         setPickupMethod(deliveryInfo.pickupMethod || "Pickup");
         setPickupLocation(deliveryInfo.pickupLocation || "");
-        
+
         // Jika ada addressId dan user login, coba ambil detail alamat dari API
         if (deliveryInfo.addressId && token) {
-          console.log("Using addressId to fetch full address details:", deliveryInfo.addressId);
+          console.log(
+            "Using addressId to fetch full address details:",
+            deliveryInfo.addressId
+          );
           // Coba ambil alamat lengkap dari database menggunakan ID
-          addressService.getUserAddresses(token)
-            .then(addresses => {
+          addressService
+            .getUserAddresses(token)
+            .then((addresses) => {
               // Cari alamat dengan ID yang cocok
-              const foundAddress = addresses.find(addr => addr.id === deliveryInfo.addressId);
+              const foundAddress = addresses.find(
+                (addr) => addr.id === deliveryInfo.addressId
+              );
               if (foundAddress) {
-                console.log("Found address by ID in user addresses:", foundAddress);
+                console.log(
+                  "Found address by ID in user addresses:",
+                  foundAddress
+                );
                 setAddress(foundAddress);
               } else {
                 // Jika tidak ditemukan di daftar alamat, gunakan string yang disimpan
-                console.log("Address ID not found in user addresses, using string value");
+                console.log(
+                  "Address ID not found in user addresses, using string value"
+                );
                 setAddress(deliveryInfo.address || "");
               }
             })
-            .catch(err => {
-              console.error("Error fetching user addresses for ID lookup:", err);
+            .catch((err) => {
+              console.error(
+                "Error fetching user addresses for ID lookup:",
+                err
+              );
               setAddress(deliveryInfo.address || "");
             });
         } else {
           // Gunakan alamat string jika tidak ada ID atau user tidak login
           setAddress(deliveryInfo.address || "");
         }
-        
+
         // Pastikan notes adalah string
         const noteValue = deliveryInfo.note || "";
-        setNotes(typeof noteValue === 'string' ? noteValue : JSON.stringify(noteValue));
+        setNotes(
+          typeof noteValue === "string" ? noteValue : JSON.stringify(noteValue)
+        );
       } catch (err) {
         console.error("Error parsing delivery info:", err);
       }
     } else {
-      console.log("No delivery info found in localStorage with key:", deliveryInfoKey);
+      console.log(
+        "No delivery info found in localStorage with key:",
+        deliveryInfoKey
+      );
     }
 
     const loadUserProfile = async () => {
@@ -242,33 +274,33 @@ export default function Checkout() {
     loadUserProfile();
   }, []);
 
-    if (!selectedItem) return <p>Loading...</p>;
+  if (!selectedItem) return <p>Loading...</p>;
 
-    const handleQuantityChange = (value) => {
-        setSelectedItem((prev) => ({
-            ...prev,
-            quantity: Math.max(1, prev.quantity + value),
-        }));
-    };
+  const handleQuantityChange = (value) => {
+    setSelectedItem((prev) => ({
+      ...prev,
+      quantity: Math.max(1, prev.quantity + value),
+    }));
+  };
 
-    const handleCheckout = () => {
-        // Periksa apakah alamat kosong
-        let addressIsEmpty = false;
-        
-        if (typeof address === "string") {
-            addressIsEmpty = address.trim() === "";
-        } else if (address && address.address) {
-            addressIsEmpty = address.address.trim() === "";
-        } else {
-            addressIsEmpty = !address;
-        }
-        
-        if (pickupMethod === "Delivery" && addressIsEmpty) {
-            alert("Mohon isi alamat pengantaran.");
-            return;
-        }
-        alert("Checkout berhasil!");
-    };
+  const handleCheckout = () => {
+    // Periksa apakah alamat kosong
+    let addressIsEmpty = false;
+
+    if (typeof address === "string") {
+      addressIsEmpty = address.trim() === "";
+    } else if (address && address.address) {
+      addressIsEmpty = address.address.trim() === "";
+    } else {
+      addressIsEmpty = !address;
+    }
+
+    if (pickupMethod === "Delivery" && addressIsEmpty) {
+      alert("Mohon isi alamat pengantaran.");
+      return;
+    }
+    alert("Checkout berhasil!");
+  };
 
   const calculateSubtotal = () => {
     console.log("Calculating subtotal for cart:", cart);
@@ -354,96 +386,123 @@ export default function Checkout() {
       if (token) {
         try {
           console.log("Menyimpan pesanan ke database...");
-          
+
           // Process items to ensure they have all necessary data
-          const processedItems = cart.map(item => {
+          const processedItems = cart.map((item) => {
             // Get the product name
-            const productName = item.product_detail?.name || 
-                                item.product_name || 
-                                item.title || 
-                                "Product";
-            
+            const productName =
+              item.product_detail?.name ||
+              item.product_name ||
+              item.title ||
+              "Product";
+
             // Calculate base price properly, ensuring it's never zero
             let basePrice = 0;
             if (item.unit_price) basePrice = Number(item.unit_price);
-            else if (item.total_price && item.quantity) basePrice = Number(item.total_price) / Number(item.quantity);
+            else if (item.total_price && item.quantity)
+              basePrice = Number(item.total_price) / Number(item.quantity);
             else if (item.base_price) basePrice = Number(item.base_price);
             else if (item.price) basePrice = Number(item.price);
-            else if (item.product_detail?.price) basePrice = Number(item.product_detail.price);
-            
+            else if (item.product_detail?.price)
+              basePrice = Number(item.product_detail.price);
+
             // Fallback to default prices if still zero
             if (basePrice <= 0) {
-              console.log(`Found zero price for ${productName}, using fallback price`);
+              console.log(
+                `Found zero price for ${productName}, using fallback price`
+              );
               // Apply a default price based on size - just to avoid zero prices
               basePrice = 15000; // Default base price for a coffee
             }
-            
+
             // Get the product ID
             const productId = item.product || item.product_id || item.id;
-            
+
             console.log(`Processed API item ${productName}:`, {
               productId,
               basePrice,
               quantity: item.quantity || 1,
-              size: item.size || "S"
+              size: item.size || "S",
             });
-            
+
             return {
               product: productId,
               quantity: item.quantity || 1,
               size: item.size || "S",
               price: basePrice, // Include price even though API might not use it
-              special_instructions: item.special_instructions || ""
+              special_instructions: item.special_instructions || "",
             };
           });
-          
+
           // Format data pesanan untuk API
           const orderData = {
-            delivery_method: pickupMethod === "Pickup" || pickupMethod === "pickup" ? "pickup" : "delivery",
-            delivery_address: (pickupMethod === "Delivery" && address && address.id) ? address.id : null,
-            delivery_notes: typeof notes === 'string' ? notes : (notes ? JSON.stringify(notes) : ""),
+            delivery_method:
+              pickupMethod === "Pickup" || pickupMethod === "pickup"
+                ? "pickup"
+                : "delivery",
+            delivery_address:
+              pickupMethod === "Delivery" && address && address.id
+                ? address.id
+                : null,
+            delivery_notes:
+              typeof notes === "string"
+                ? notes
+                : notes
+                ? JSON.stringify(notes)
+                : "",
             pickup_location: pickupMethod === "Pickup" ? pickupLocation : "",
             pickup_time: null, // Bisa ditentukan server
-            special_instructions: typeof notes === 'string' ? notes : (notes ? JSON.stringify(notes) : ""),
+            special_instructions:
+              typeof notes === "string"
+                ? notes
+                : notes
+                ? JSON.stringify(notes)
+                : "",
             points_used: 0, // Default tidak menggunakan poin
             items: processedItems,
             payment_method: selectedPaymentMethod || "cash",
             delivery_fee: 10000, // Ensure delivery fee is exactly 10000
           };
-          
+
           console.log("API Order data:", JSON.stringify(orderData, null, 2));
-          
+
           // Buat pesanan baru
           const createdOrder = await orderService.createOrder(token, orderData);
           console.log("Pesanan berhasil dibuat:", createdOrder);
-          
+
           // Make sure the order has the frontend order number for reference
           createdOrder.orderNumber = orderNumber;
-          
+
           // Save the order from backend to sessionStorage
           sessionStorage.setItem("order", JSON.stringify(createdOrder));
           console.log("Order data saved to session storage:", createdOrder);
-          
+
           // Bersihkan keranjang di backend
-          await fetch(`${process.env.NEXT_PUBLIC_BROWSER_API_URL || "http://localhost:8000/api"}/cart/clear/`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            },
-          });
-          
+          await fetch(
+            `${
+              process.env.NEXT_PUBLIC_BROWSER_API_URL ||
+              "http://10.34.100.143:8000/api"
+            }/cart/clear/`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
           // Bersihkan keranjang di localStorage
           const cartKey = userId ? `cart_${userId}` : "cart";
           localStorage.removeItem(cartKey);
-          
+
           // Redirect ke halaman konfirmasi pembayaran
           router.push(`/Checkout/PaymentConfirmation?order=${orderNumber}`);
           return; // Add return to exit function early
         } catch (err) {
           console.error("Error saving order to database:", err);
           setError(`Gagal menyimpan pesanan: ${err.message}`);
-          
+
           // Fallback ke localStorage jika gagal menyimpan ke database
           saveOrderToLocalStorage();
         }
@@ -451,45 +510,51 @@ export default function Checkout() {
         // Jika tidak login, simpan ke localStorage seperti biasa
         saveOrderToLocalStorage();
       }
-      
+
       function saveOrderToLocalStorage() {
         console.log("Menyimpan pesanan ke localStorage...");
-        
+
         // Process items to ensure they have all necessary data
-        const processedItems = cart.map(item => {
+        const processedItems = cart.map((item) => {
           // Get the product name
-          const productName = item.product_detail?.name || 
-                              item.product_name || 
-                              item.title || 
-                              "Product";
-          
+          const productName =
+            item.product_detail?.name ||
+            item.product_name ||
+            item.title ||
+            "Product";
+
           // Calculate base price properly, ensuring it's never zero
           let basePrice = 0;
           if (item.unit_price) basePrice = Number(item.unit_price);
-          else if (item.total_price && item.quantity) basePrice = Number(item.total_price) / Number(item.quantity);
+          else if (item.total_price && item.quantity)
+            basePrice = Number(item.total_price) / Number(item.quantity);
           else if (item.base_price) basePrice = Number(item.base_price);
           else if (item.price) basePrice = Number(item.price);
-          else if (item.product_detail?.price) basePrice = Number(item.product_detail.price);
-          
+          else if (item.product_detail?.price)
+            basePrice = Number(item.product_detail.price);
+
           // Fallback to default prices if still zero
           if (basePrice <= 0) {
-            console.log(`Found zero price for ${productName}, using fallback price`);
+            console.log(
+              `Found zero price for ${productName}, using fallback price`
+            );
             // Apply a default price based on size - just to avoid zero prices
             basePrice = 15000; // Default base price for a coffee
           }
-          
+
           // Add size extra
-          const sizeExtra = item.size === "Large" ? 5000 : item.size === "Medium" ? 3000 : 0;
+          const sizeExtra =
+            item.size === "Large" ? 5000 : item.size === "Medium" ? 3000 : 0;
           const finalPrice = basePrice + sizeExtra;
-          
+
           console.log(`Processed item ${productName}:`, {
             originalPrice: item.price || item.unit_price,
             calculatedBasePrice: basePrice,
             sizeExtra,
             finalPrice,
-            size: item.size
+            size: item.size,
           });
-          
+
           // Return processed item with all necessary fields
           return {
             ...item,
@@ -499,10 +564,10 @@ export default function Checkout() {
             price: basePrice,
             unit_price: basePrice,
             final_price: finalPrice,
-            total_price: finalPrice * (item.quantity || 1)
+            total_price: finalPrice * (item.quantity || 1),
           };
         });
-        
+
         const orderData = {
           orderNumber,
           items: processedItems,
@@ -519,18 +584,30 @@ export default function Checkout() {
             pickupMethod === "Delivery" || pickupMethod === "delivery"
               ? formatAddress(address)
               : "",
-          addressId: (pickupMethod === "Delivery" && address && address.id) ? address.id : null,
+          addressId:
+            pickupMethod === "Delivery" && address && address.id
+              ? address.id
+              : null,
           userId: userId,
-          notes: typeof notes === 'string' ? notes : (notes ? JSON.stringify(notes) : "")
+          notes:
+            typeof notes === "string"
+              ? notes
+              : notes
+              ? JSON.stringify(notes)
+              : "",
         };
-        
+
         // Double-check the total amount calculation
         if (orderData.totalAmount <= 0) {
-          console.log("Warning: Total amount is zero or negative, recalculating from items");
-          orderData.totalAmount = processedItems.reduce((sum, item) => 
-            sum + (item.final_price * (item.quantity || 1)), 0);
+          console.log(
+            "Warning: Total amount is zero or negative, recalculating from items"
+          );
+          orderData.totalAmount = processedItems.reduce(
+            (sum, item) => sum + item.final_price * (item.quantity || 1),
+            0
+          );
         }
-        
+
         // Log full order data for debugging
         console.log("Complete order data:", JSON.stringify(orderData, null, 2));
 
@@ -540,11 +617,11 @@ export default function Checkout() {
         orders.push(orderData);
 
         localStorage.setItem(ordersKey, JSON.stringify(orders));
-        
+
         // Save order data to sessionStorage for PaymentConfirmation page
         sessionStorage.setItem("order", JSON.stringify(orderData));
         console.log("Order data saved to session storage:", orderData);
-        
+
         // Bersihkan keranjang di localStorage
         const cartKey = userId ? `cart_${userId}` : "cart";
         localStorage.removeItem(cartKey);
@@ -559,7 +636,7 @@ export default function Checkout() {
     }
   };
 
-    return (
+  return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Checkout</h1>
 
@@ -572,7 +649,7 @@ export default function Checkout() {
                 key={item.id}
                 className="flex justify-between items-center mb-4"
               >
-                    <div>
+                <div>
                   <h3 className="font-medium">
                     {/* Handle struktur data dari API */}
                     {item.product_name ||
@@ -608,8 +685,8 @@ export default function Checkout() {
                 <span>Total</span>
                 <span>{formatRupiah(calculateSubtotal())}</span>
               </div>
-                </div>
             </div>
+          </div>
 
           {/* Metode Pengambilan */}
           <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -630,7 +707,7 @@ export default function Checkout() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    </div>
+                  </div>
                   <div>
                     <p className="font-medium">Pickup</p>
                     {pickupLocation && (
@@ -638,7 +715,7 @@ export default function Checkout() {
                         Lokasi: {pickupLocation}
                       </p>
                     )}
-                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center">
@@ -655,8 +732,8 @@ export default function Checkout() {
                         clipRule="evenodd"
                       />
                     </svg>
-            </div>
-                <div>
+                  </div>
+                  <div>
                     <p className="font-medium">Delivery</p>
                     {address && (
                       <p className="text-sm text-gray-600">
@@ -665,10 +742,10 @@ export default function Checkout() {
                     )}
                   </div>
                 </div>
-            )}
+              )}
             </div>
           </div>
-            </div>
+        </div>
 
         <div className="md:col-span-1">
           <div className="bg-white rounded-lg shadow p-6">
@@ -716,7 +793,7 @@ export default function Checkout() {
                         {method.description}
                       </p>
                     </div>
-                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -737,10 +814,10 @@ export default function Checkout() {
               }`}
             >
               {isProcessing ? "Memproses..." : "Bayar Sekarang"}
-                </button>
+            </button>
           </div>
         </div>
-            </div>
-        </div>
-    );
+      </div>
+    </div>
+  );
 }

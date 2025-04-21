@@ -94,7 +94,8 @@ export default function ProductCard({
     }
 
     // Perbaiki path media
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://10.34.100.143:8000";
     console.log("API URL:", apiUrl);
 
     // Hapus '/api' jika ada di awal path

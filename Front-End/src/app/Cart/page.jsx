@@ -9,19 +9,19 @@ import * as addressService from "@/services/addressService";
 // Helper function untuk format alamat
 const formatAddress = (addressValue) => {
   if (!addressValue) return "";
-  
+
   if (typeof addressValue === "string") {
     return addressValue;
   }
-  
+
   if (addressValue.address) {
     return addressValue.address;
   }
-  
+
   if (addressValue.id) {
     return `Alamat ID: ${addressValue.id}`;
   }
-  
+
   return JSON.stringify(addressValue);
 };
 
@@ -139,26 +139,26 @@ export default function Cart() {
       // Fetch addresses using address service instead of profile API
       Promise.all([
         addressService.getUserAddresses(token),
-        addressService.getDefaultAddress(token)
+        addressService.getDefaultAddress(token),
       ])
-      .then(([addresses, defaultAddress]) => {
-        console.log("Fetched addresses from DB:", addresses);
-        console.log("Default address from DB:", defaultAddress);
-        
-        setSavedAddresses(addresses);
-        
-        // Use default address if available and no address is already set
-        if (defaultAddress && !address) {
-          setAddress(defaultAddress);
-        } 
-        // Otherwise use the first address if available
-        else if (addresses && addresses.length > 0 && !address) {
-          setAddress(addresses[0]);
-        }
-      })
-      .catch((err) => {
-        console.error("Gagal mengambil alamat user:", err);
-      });
+        .then(([addresses, defaultAddress]) => {
+          console.log("Fetched addresses from DB:", addresses);
+          console.log("Default address from DB:", defaultAddress);
+
+          setSavedAddresses(addresses);
+
+          // Use default address if available and no address is already set
+          if (defaultAddress && !address) {
+            setAddress(defaultAddress);
+          }
+          // Otherwise use the first address if available
+          else if (addresses && addresses.length > 0 && !address) {
+            setAddress(addresses[0]);
+          }
+        })
+        .catch((err) => {
+          console.error("Gagal mengambil alamat user:", err);
+        });
     }
   }, [address]);
 
@@ -167,19 +167,19 @@ export default function Cart() {
       if (quantity <= 0) {
         // Hapus item dari keranjang
         const { cart } = await cartService.removeCartItem(id);
-        
+
         // Pastikan data produk tetap ada di item keranjang
         const updatedCart = await processCartItems(cart);
         setCartItems(updatedCart);
       } else {
         // Simpan data produk saat ini sebelum update
-        const currentItem = cartItems.find(item => item.id === id);
-        
+        const currentItem = cartItems.find((item) => item.id === id);
+
         // Update kuantitas
         const { cart } = await cartService.updateCartItem(id, { quantity });
-        
+
         // Pastikan data produk tetap ada di item keranjang yang diupdate
-        const updatedCart = cart.map(item => {
+        const updatedCart = cart.map((item) => {
           if (item.id === id && currentItem) {
             // Pertahankan data penting dari item sebelumnya
             return {
@@ -187,12 +187,12 @@ export default function Cart() {
               title: currentItem.title || item.title,
               image: currentItem.image || item.image,
               price: currentItem.price || item.price,
-              product_detail: currentItem.product_detail || item.product_detail
+              product_detail: currentItem.product_detail || item.product_detail,
             };
           }
           return item;
         });
-        
+
         // Proses cart lengkap untuk mendapatkan data produk lain jika diperlukan
         const processedCart = await processCartItems(updatedCart);
         setCartItems(processedCart);
@@ -206,13 +206,13 @@ export default function Cart() {
   const handleSizeChange = async (id, size) => {
     try {
       // Simpan data produk saat ini sebelum update
-      const currentItem = cartItems.find(item => item.id === id);
-      
+      const currentItem = cartItems.find((item) => item.id === id);
+
       // Update ukuran dengan cartService
       const { cart } = await cartService.updateCartItem(id, { size });
-      
+
       // Pastikan data produk tetap ada di item keranjang yang diupdate
-      const updatedCart = cart.map(item => {
+      const updatedCart = cart.map((item) => {
         if (item.id === id && currentItem) {
           // Pertahankan data penting dari item sebelumnya
           return {
@@ -220,12 +220,12 @@ export default function Cart() {
             title: currentItem.title || item.title,
             image: currentItem.image || item.image,
             price: currentItem.price || item.price,
-            product_detail: currentItem.product_detail || item.product_detail
+            product_detail: currentItem.product_detail || item.product_detail,
           };
         }
         return item;
       });
-      
+
       // Proses cart lengkap untuk mendapatkan data produk lain jika diperlukan
       const processedCart = await processCartItems(updatedCart);
       setCartItems(processedCart);
@@ -254,7 +254,8 @@ export default function Cart() {
     }
 
     // Perbaiki path media
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://10.34.100.143:8000";
     console.log("API URL:", apiUrl);
 
     // Hapus '/api' jika ada di awal path
@@ -290,7 +291,7 @@ export default function Cart() {
       // Handle undefined atau null price
       if (basePrice === undefined || basePrice === null) {
         console.warn("Item price is undefined or null:", item);
-        
+
         // Coba ambil harga dari product_detail jika ada
         if (item.product_detail && item.product_detail.price) {
           basePrice = item.product_detail.price;
@@ -347,18 +348,24 @@ export default function Cart() {
   // Fungsi untuk memproses item keranjang dan memastikan semua data produk lengkap
   const processCartItems = async (cartItems) => {
     if (!cartItems || cartItems.length === 0) return [];
-    
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    
+
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://10.34.100.143:8000";
+
     try {
       // Proses setiap item untuk memastikan data lengkap
       return await Promise.all(
         cartItems.map(async (item) => {
           // Jika item sudah memiliki data lengkap, gunakan itu
-          if (item.title && item.image && item.price !== undefined && item.price !== null) {
+          if (
+            item.title &&
+            item.image &&
+            item.price !== undefined &&
+            item.price !== null
+          ) {
             return item;
           }
-          
+
           // Jika item sudah memiliki detail produk lengkap, gunakan itu
           if (item.product_detail && item.product_detail.name) {
             // Pastikan ada harga
@@ -369,7 +376,7 @@ export default function Cart() {
             } else {
               price = formatPrice(price);
             }
-            
+
             return {
               ...item,
               image: item.product_detail.image_url || item.product_detail.image,
@@ -381,16 +388,16 @@ export default function Cart() {
           try {
             // Gunakan product_id jika ada, jika tidak gunakan id
             const productId = item.product || item.product_id;
-            
+
             if (!productId) {
               console.error("No product ID found in item:", item);
               return {
                 ...item,
                 title: item.title || "Unknown Product",
-                price: item.price || 0
+                price: item.price || 0,
               };
             }
-            
+
             const response = await fetch(
               `${apiUrl}/api/products/${productId}/`
             );
@@ -402,7 +409,7 @@ export default function Cart() {
               return {
                 ...item,
                 title: item.title || "Unknown Product",
-                price: item.price || 0
+                price: item.price || 0,
               };
             }
 
@@ -417,20 +424,23 @@ export default function Cart() {
             } else {
               price = formatPrice(price);
             }
-            
+
             return {
               ...item,
               image: productData.image_url || productData.image,
               title: productData.name,
               price: price,
-              product_detail: productData // Simpan detail lengkap produk
+              product_detail: productData, // Simpan detail lengkap produk
             };
           } catch (error) {
-            console.error("Error fetching product details in processing:", error);
+            console.error(
+              "Error fetching product details in processing:",
+              error
+            );
             return {
               ...item,
               title: item.title || "Unknown Product",
-              price: item.price || 0
+              price: item.price || 0,
             };
           }
         })
@@ -564,15 +574,30 @@ export default function Cart() {
                         );
 
                         // Handle undefined atau null price
-                        if (displayPrice === undefined || displayPrice === null) {
-                          console.warn("Display price is undefined or null:", item);
-                          
+                        if (
+                          displayPrice === undefined ||
+                          displayPrice === null
+                        ) {
+                          console.warn(
+                            "Display price is undefined or null:",
+                            item
+                          );
+
                           // Coba ambil harga dari product_detail jika ada
-                          if (item.product_detail && item.product_detail.price) {
+                          if (
+                            item.product_detail &&
+                            item.product_detail.price
+                          ) {
                             displayPrice = item.product_detail.price;
-                            console.log("Using price from product_detail for display:", displayPrice);
+                            console.log(
+                              "Using price from product_detail for display:",
+                              displayPrice
+                            );
                           } else {
-                            console.error("No valid price found for display:", item);
+                            console.error(
+                              "No valid price found for display:",
+                              item
+                            );
                             return formatRupiah(0); // Tampilkan 0 sebagai fallback
                           }
                         }
@@ -696,7 +721,9 @@ export default function Cart() {
         {/* Delivery Address Section */}
         {pickupMethod === "Delivery" && (
           <div>
-            <label className="block font-medium mb-1">Alamat Pengantaran:</label>
+            <label className="block font-medium mb-1">
+              Alamat Pengantaran:
+            </label>
             {savedAddresses.length > 0 ? (
               <div className="space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -713,16 +740,16 @@ export default function Cart() {
                       onClick={() => setAddress(addr)}
                     >
                       <div className="flex justify-between">
-                        <div className="font-semibold">{addr.label || "Alamat"}</div>
+                        <div className="font-semibold">
+                          {addr.label || "Alamat"}
+                        </div>
                         {addr.is_default && (
                           <span className="text-xs bg-green-100 text-green-800 px-1 rounded">
                             Default
                           </span>
                         )}
                       </div>
-                      <div className="text-sm mt-1">
-                        {formatAddress(addr)}
-                      </div>
+                      <div className="text-sm mt-1">{formatAddress(addr)}</div>
                     </div>
                   ))}
                 </div>
@@ -790,14 +817,14 @@ export default function Cart() {
 
               // Format alamat untuk disimpan
               let addressToStore = "";
-              
+
               if (typeof address === "string") {
                 addressToStore = address;
               } else if (address) {
                 // Jika address adalah objek (dari DB), gunakan format address untuk DB
                 addressToStore = address.address || address.id || "";
               }
-              
+
               // Simpan metode pengambilan dan alamat di localStorage
               const userId = localStorage.getItem("user_id");
               const deliveryInfoKey = userId

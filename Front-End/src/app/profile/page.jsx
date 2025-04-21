@@ -43,7 +43,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!isClient) return;
-    
+
     // Periksa token dari localStorage
     const storedToken = localStorage.getItem("access_token");
     if (storedToken) {
@@ -217,7 +217,8 @@ export default function ProfilePage() {
     }
 
     // Perbaiki path media
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://10.34.100.143:8000";
     console.log("Profile - API URL:", apiUrl);
 
     // Hapus '/api' jika ada di awal path
@@ -259,7 +260,7 @@ export default function ProfilePage() {
         <p className="text-lg">Memuat data profil...</p>
       </div>
     );
-  
+
   // Tampilkan loading screen saat di server side rendering
   if (!isClient) {
     return (
@@ -279,7 +280,7 @@ export default function ProfilePage() {
           <p className="text-red-500 mb-4">{error}</p>
           <button
             onClick={() => {
-              if (typeof window !== 'undefined') {
+              if (typeof window !== "undefined") {
                 window.location.reload();
               } else {
                 router.refresh();

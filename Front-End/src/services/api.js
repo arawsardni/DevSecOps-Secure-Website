@@ -1,9 +1,10 @@
 // Menggunakan URL yang berbeda berdasarkan environment
-// - Di browser pengguna: http://localhost:8000/api
+// - Di browser pengguna: http://10.34.100.143:8000/api
 // - Di dalam container: http://backend:8000/api
-const API_URL = typeof window !== 'undefined' 
-  ? (process.env.NEXT_PUBLIC_BROWSER_API_URL || "http://localhost:8000/api") 
-  : (process.env.NEXT_PUBLIC_API_URL || "http://backend:8000/api");
+export const API_URL =
+  typeof window !== "undefined"
+    ? process.env.NEXT_PUBLIC_BROWSER_API_URL || "http://10.34.100.143:8000/api"
+    : process.env.NEXT_PUBLIC_API_URL || "http://backend:8000/api";
 
 export const getProducts = async (params = {}) => {
   const queryParams = new URLSearchParams(params);
@@ -111,46 +112,47 @@ export const loginUser = async (credentials) => {
   try {
     // Extract email and password correctly to avoid nested objects
     const { email, password } = credentials;
-    
+
     // Ensure we're sending a properly formatted object
     const loginData = { email, password };
-    
-    console.log('Logging in user:', email);
-    console.log('Login payload:', JSON.stringify(loginData));
-    
+
+    console.log("Logging in user:", email);
+    console.log("Login payload:", JSON.stringify(loginData));
+
     const response = await fetch(`${API_URL}/auth/login/`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(loginData)
+      body: JSON.stringify(loginData),
     });
-    
+
     // Get the raw text first for better debugging
     const responseText = await response.text();
-    console.log('Raw response:', responseText);
-    
+    console.log("Raw response:", responseText);
+
     // Try to parse as JSON
     let data;
     let ok = response.ok;
-    
+
     try {
       data = JSON.parse(responseText);
     } catch (error) {
       console.error("Error parsing response:", error);
       throw new Error("Server returned invalid response");
     }
-    
+
     if (!ok) {
       // Extract error message from response
-      let errorMessage = 'Login failed';
-      
+      let errorMessage = "Login failed";
+
       if (data) {
         // Check all possible error field names
         if (data.detail) {
-          errorMessage = typeof data.detail === 'object' 
-            ? JSON.stringify(data.detail) 
-            : data.detail;
+          errorMessage =
+            typeof data.detail === "object"
+              ? JSON.stringify(data.detail)
+              : data.detail;
         } else if (data.error) {
           errorMessage = data.error;
         } else if (data.message) {
@@ -159,14 +161,14 @@ export const loginUser = async (credentials) => {
           errorMessage = data.non_field_errors[0];
         }
       }
-      
-      console.error('Login error details:', data);
+
+      console.error("Login error details:", data);
       throw new Error(errorMessage);
     }
-    
+
     return data;
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     throw error;
   }
 };
@@ -358,7 +360,7 @@ export const getPurchasedProducts = async (userId) => {
     }
 
     console.log("Fetching purchased products for user:", userId);
-    
+
     // Gunakan endpoint baru untuk produk yang pernah dibeli
     const apiUrl = `${API_URL}/orders/user/${userId}/purchased-products/`;
     console.log("API URL:", apiUrl);
@@ -379,9 +381,11 @@ export const getPurchasedProducts = async (userId) => {
       console.error("Error response text:", responseText);
 
       // Jika API gagal, fallback ke metode lama
-      console.log("API gagal, mencoba metode alternatif untuk mendapatkan produk...");
+      console.log(
+        "API gagal, mencoba metode alternatif untuk mendapatkan produk..."
+      );
       const oldApiUrl = `${API_URL}/orders/user/${userId}/completed/`;
-      
+
       try {
         const oldResponse = await fetch(oldApiUrl, {
           headers: {
@@ -389,11 +393,11 @@ export const getPurchasedProducts = async (userId) => {
             "Content-Type": "application/json",
           },
         });
-        
+
         if (!oldResponse.ok) {
           throw new Error(`Error dengan status: ${oldResponse.status}`);
         }
-        
+
         const orders = await oldResponse.json();
         return processCompletedOrdersForProducts(orders);
       } catch (oldApiError) {
@@ -405,24 +409,26 @@ export const getPurchasedProducts = async (userId) => {
 
     const products = await response.json();
     console.log("Purchased products from API:", products);
-    
+
     // Process image URLs in the products
-    const processedProducts = products.map(product => {
+    const processedProducts = products.map((product) => {
       // Create a copy of the product to avoid modifying the original
       const processedProduct = { ...product };
-      
+
       // Process image URLs
       if (processedProduct.image) {
         processedProduct.image = processImageUrl(processedProduct.image);
       }
-      
+
       if (processedProduct.image_url) {
-        processedProduct.image_url = processImageUrl(processedProduct.image_url);
+        processedProduct.image_url = processImageUrl(
+          processedProduct.image_url
+        );
       }
-      
+
       return processedProduct;
     });
-    
+
     return processedProducts;
   } catch (error) {
     console.error("Error fetching purchased products:", error);
@@ -434,35 +440,36 @@ export const getPurchasedProducts = async (userId) => {
 // Helper function to process image URLs
 function processImageUrl(url) {
   if (!url) return null;
-  
+
   // If already a complete URL, return as is
-  if (url.startsWith('http')) {
+  if (url.startsWith("http")) {
     return url;
   }
-  
+
   try {
     // Get the base URL (without /api)
     const apiUrl = API_URL;
-    const baseUrl = typeof window !== 'undefined' 
-      ? (process.env.NEXT_PUBLIC_BROWSER_BASE_URL || apiUrl.replace('/api', '')) 
-      : (process.env.NEXT_PUBLIC_BASE_URL || apiUrl.replace('/api', ''));
-    
+    const baseUrl =
+      typeof window !== "undefined"
+        ? process.env.NEXT_PUBLIC_BROWSER_BASE_URL || apiUrl.replace("/api", "")
+        : process.env.NEXT_PUBLIC_BASE_URL || apiUrl.replace("/api", "");
+
     // Clean the URL path
     let cleanUrl = url;
-    if (cleanUrl.startsWith('/api/')) {
+    if (cleanUrl.startsWith("/api/")) {
       cleanUrl = cleanUrl.substring(4);
     }
-    
+
     // Ensure it has the proper /media prefix if needed
-    if (!cleanUrl.startsWith('/media/') && !cleanUrl.startsWith('/')) {
-      cleanUrl = '/media/' + cleanUrl;
-    } else if (!cleanUrl.startsWith('/')) {
-      cleanUrl = '/' + cleanUrl;
+    if (!cleanUrl.startsWith("/media/") && !cleanUrl.startsWith("/")) {
+      cleanUrl = "/media/" + cleanUrl;
+    } else if (!cleanUrl.startsWith("/")) {
+      cleanUrl = "/" + cleanUrl;
     }
-    
+
     return `${baseUrl}${cleanUrl}`;
   } catch (error) {
-    console.error('Error processing image URL:', error, url);
+    console.error("Error processing image URL:", error, url);
     return url; // Return original if processing fails
   }
 }
@@ -527,22 +534,22 @@ export const getProductReviews = async (productId) => {
       console.warn("Invalid product ID for reviews");
       return [];
     }
-    
+
     console.log("Fetching reviews for product ID:", productId);
-    
+
     // Connect to backend API
     const response = await fetch(`${API_URL}/reviews/products/${productId}/`);
-    
+
     if (!response.ok) {
       console.error("Failed to fetch reviews:", response.status);
       // Fallback to localStorage if API fails
       return getProductReviewsFromLocalStorage(productId);
     }
-    
+
     const responseData = await response.json();
-    
+
     // Format the backend response to match our frontend format
-    const reviews = responseData.reviews.map(review => ({
+    const reviews = responseData.reviews.map((review) => ({
       id: review.id,
       productId: review.product,
       userId: review.user,
@@ -554,27 +561,29 @@ export const getProductReviews = async (productId) => {
       avatar: review.user_detail?.avatar || null,
       isApproved: review.is_approved,
       isFeatured: review.is_featured,
-      likesCount: review.likes_count
+      likesCount: review.likes_count,
     }));
-    
+
     console.log(`Found ${reviews.length} reviews for product ${productId}`);
-    
+
     // Also save to localStorage for offline access
     try {
-      const allReviews = JSON.parse(localStorage.getItem("product_reviews") || "[]");
-      
-      // Remove any existing reviews for this product
-      const filteredReviews = allReviews.filter(review => 
-        String(review.productId) !== String(productId)
+      const allReviews = JSON.parse(
+        localStorage.getItem("product_reviews") || "[]"
       );
-      
+
+      // Remove any existing reviews for this product
+      const filteredReviews = allReviews.filter(
+        (review) => String(review.productId) !== String(productId)
+      );
+
       // Add the new reviews
       const updatedReviews = [...filteredReviews, ...reviews];
       localStorage.setItem("product_reviews", JSON.stringify(updatedReviews));
     } catch (err) {
       console.error("Error saving reviews to localStorage:", err);
     }
-    
+
     return reviews;
   } catch (error) {
     console.error("Error fetching product reviews:", error);
@@ -595,12 +604,15 @@ const getProductReviewsFromLocalStorage = (productId) => {
     console.log("Fetching reviews from localStorage for product ID:", targetId);
 
     // Filter review based on productId
-    return reviews.filter(review => {
+    return reviews.filter((review) => {
       // Check direct ID match
       if (String(review.productId) === targetId) return true;
 
       // Check alternative IDs
-      if (review.alternate_product_ids && Array.isArray(review.alternate_product_ids)) {
+      if (
+        review.alternate_product_ids &&
+        Array.isArray(review.alternate_product_ids)
+      ) {
         if (review.alternate_product_ids.includes(targetId)) return true;
       }
 
@@ -623,40 +635,42 @@ export const addProductReview = async (reviewData) => {
     if (!reviewData.productId || !reviewData.rating) {
       throw new Error("Incomplete review data");
     }
-    
+
     // Get user token
     const token = localStorage.getItem("access_token");
     if (!token) {
       throw new Error("You must be logged in to leave a review");
     }
-    
+
     console.log("Adding review for product ID:", reviewData.productId);
-    
+
     // Format data for the backend
     const backendData = {
       product: reviewData.productId,
       rating: reviewData.rating,
-      comment: reviewData.comment || ""
+      comment: reviewData.comment || "",
     };
-    
+
     // Post to the backend
     const response = await fetch(`${API_URL}/reviews/create/`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(backendData)
+      body: JSON.stringify(backendData),
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || errorData.error || "Failed to submit review");
+      throw new Error(
+        errorData.detail || errorData.error || "Failed to submit review"
+      );
     }
-    
+
     // Get the response with the created review
     const createdReview = await response.json();
-    
+
     // Format for frontend use
     const formattedReview = {
       id: createdReview.id,
@@ -670,27 +684,30 @@ export const addProductReview = async (reviewData) => {
       avatar: createdReview.user_detail?.avatar || null,
       isApproved: createdReview.is_approved,
       isFeatured: createdReview.is_featured,
-      likesCount: createdReview.likes_count
+      likesCount: createdReview.likes_count,
     };
-    
+
     // Also save to localStorage as a backup
     try {
       const reviewsData = localStorage.getItem("product_reviews");
       let reviews = reviewsData ? JSON.parse(reviewsData) : [];
-      
+
       // Remove any existing review by this user for this product
-      reviews = reviews.filter(review => 
-        !(String(review.productId) === String(reviewData.productId) && 
-          String(review.userId) === String(reviewData.userId))
+      reviews = reviews.filter(
+        (review) =>
+          !(
+            String(review.productId) === String(reviewData.productId) &&
+            String(review.userId) === String(reviewData.userId)
+          )
       );
-      
+
       // Add the new review
       reviews.push(formattedReview);
       localStorage.setItem("product_reviews", JSON.stringify(reviews));
     } catch (err) {
       console.error("Error saving review to localStorage:", err);
     }
-    
+
     return formattedReview;
   } catch (error) {
     console.error("Error adding product review:", error);
@@ -707,26 +724,26 @@ export const createTestOrders = async (token) => {
     const response = await fetch(`${API_URL}/orders/create-test-orders/`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
 
     // Log for debugging
     console.log("Create test orders response status:", response.status);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Error response:", errorText);
       let errorMessage = "Gagal membuat pesanan test";
-      
+
       try {
         const errorData = JSON.parse(errorText);
         errorMessage = errorData.error || errorData.detail || errorMessage;
       } catch (e) {
         // If not JSON, use the raw text
       }
-      
+
       throw new Error(errorMessage);
     }
 
@@ -743,19 +760,19 @@ const processCompletedOrdersForProducts = (orders) => {
   // Ekstrak semua produk yang telah dibeli
   const purchasedProducts = [];
   const productIds = new Set();
-  
+
   orders.forEach((order) => {
     if (order.items && Array.isArray(order.items)) {
       order.items.forEach((item) => {
         if (item.product && !productIds.has(item.product.id)) {
           productIds.add(item.product.id);
-          
+
           // Process image URLs before adding to list
           let image = item.product.image_url || item.product.image;
           if (image) {
             image = processImageUrl(image);
           }
-          
+
           purchasedProducts.push({
             id: item.product.id,
             name: item.product.name,
@@ -771,7 +788,7 @@ const processCompletedOrdersForProducts = (orders) => {
       });
     }
   });
-  
+
   console.log("Processed purchased products from orders:", purchasedProducts);
   return purchasedProducts;
 };

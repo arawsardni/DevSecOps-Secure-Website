@@ -22,7 +22,7 @@ AUTH_USER_MODEL = 'useraccount.User'
 
 SITE_ID = 1
 
-WEBSITE_URL = 'http://localhost:8000'
+WEBSITE_URL = 'http://10.34.100.143:8000'
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
@@ -57,6 +57,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://frontend:3000',
     'http://backend:8000',
+    'http://10.34.100.143:8000',
+    'http://10.34.100.143:3000',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -202,3 +204,16 @@ MEDIA_ROOT = BASE_DIR / 'media/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Security settings
+SECURE_HSTS_SECONDS = 31536000 # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = False  # Set to True if you have SSL configured
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SESSION_COOKIE_SECURE = False  # Set to True if you have SSL configured
+CSRF_COOKIE_SECURE = False  # Set to True if you have SSL configured
+X_FRAME_OPTIONS = 'DENY'
+CSRF_COOKIE_HTTPONLY = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

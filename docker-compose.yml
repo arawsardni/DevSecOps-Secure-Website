@@ -15,12 +15,12 @@ services:
     env_file:
       - ./Back-End/.env.dev
     environment:
-      - DJANGO_ALLOWED_HOSTS=localhost localhost:8000 127.0.0.1 [::1] backend frontend
+      - DJANGO_ALLOWED_HOSTS=localhost localhost:8000 127.0.0.1 [::1] backend frontend 10.34.100.143 10.34.100.143:8000 10.34.100.143:3000
     depends_on:
       - db
     networks:
       - app-network
-  
+
   frontend:
     build: ./Front-End
     container_name: nextjs_frontend
@@ -33,11 +33,11 @@ services:
       - /app/node_modules
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:8000/api
-      - NEXT_PUBLIC_BROWSER_API_URL=http://localhost:8000/api
-      - NODE_ENV=development
+      - NEXT_PUBLIC_BROWSER_API_URL=http://10.34.100.143:8000/api
+      - NODE_ENV=production
     networks:
       - app-network
-  
+
   db:
     image: postgres:15
     container_name: postgres_db
@@ -51,10 +51,9 @@ services:
     networks:
       - app-network
 
-
 networks:
   app-network:
     driver: bridge
 
 volumes:
-  postgres_data: 
+  postgres_data:

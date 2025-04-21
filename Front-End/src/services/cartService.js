@@ -1,12 +1,13 @@
 // Hybrid storage untuk keranjang - menggunakan API backend dengan fallback ke localStorage
 import * as api from "./api";
 
-// Konstanta untuk API URL
-// - Di browser pengguna: http://localhost:8000/api
+// Menggunakan URL yang berbeda berdasarkan environment
+// - Di browser pengguna: http://10.34.100.143:8000/api
 // - Di dalam container: http://backend:8000/api
-const API_URL = typeof window !== 'undefined' 
-  ? (process.env.NEXT_PUBLIC_BROWSER_API_URL || "http://localhost:8000/api") 
-  : (process.env.NEXT_PUBLIC_API_URL || "http://backend:8000/api");
+const API_URL =
+  typeof window !== "undefined"
+    ? process.env.NEXT_PUBLIC_BROWSER_API_URL || "http://10.34.100.143:8000/api"
+    : process.env.NEXT_PUBLIC_API_URL || "http://backend:8000/api";
 
 /**
  * Mendapatkan keranjang belanja dari backend atau localStorage

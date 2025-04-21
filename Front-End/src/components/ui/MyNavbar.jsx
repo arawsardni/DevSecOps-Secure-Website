@@ -135,10 +135,11 @@ export function MyNavbar() {
     }
 
     // Perbaiki path media
-    const apiUrl = typeof window !== 'undefined'
-      ? (process.env.NEXT_PUBLIC_BROWSER_API_URL || "http://localhost:8000")
-      : (process.env.NEXT_PUBLIC_API_URL || "http://backend:8000");
-    console.log("API URL:", apiUrl);
+    const baseApiUrl =
+      typeof window !== "undefined"
+        ? process.env.NEXT_PUBLIC_BROWSER_API_URL || "http://10.34.100.143:8000"
+        : process.env.NEXT_PUBLIC_API_URL || "http://backend:8000";
+    console.log("API URL:", baseApiUrl);
 
     // Hapus '/api' jika ada di awal path
     let cleanUrl = avatarUrl;
@@ -154,7 +155,7 @@ export function MyNavbar() {
     }
 
     // Gabungkan dengan base URL API
-    const finalUrl = `${apiUrl}${cleanUrl}`;
+    const finalUrl = `${baseApiUrl}${cleanUrl}`;
     console.log("Final avatar URL:", finalUrl);
     return finalUrl;
   };

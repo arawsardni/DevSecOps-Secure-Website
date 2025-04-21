@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getPurchasedProducts, getProductReviews, createTestOrders } from "@/services/api";
+import {
+  getPurchasedProducts,
+  getProductReviews,
+  createTestOrders,
+} from "@/services/api";
 import ReviewForm from "@/components/ReviewForm";
 import { formatRupiah } from "@/utils/formatters";
 import { toast } from "react-hot-toast";
@@ -58,7 +62,7 @@ export default function ProductReviewsPage() {
     try {
       setLoading(true);
       const userId = localStorage.getItem("user_id");
-      
+
       if (!userId) {
         throw new Error("User ID tidak ditemukan");
       }
@@ -67,7 +71,7 @@ export default function ProductReviewsPage() {
       console.log("Fetching purchased products from backend API");
       const purchasedProductsData = await getPurchasedProducts(userId);
       console.log("Received purchased products:", purchasedProductsData);
-      
+
       // Menyimpan data produk yang dibeli
       setPurchasedProducts(purchasedProductsData);
 
@@ -141,16 +145,18 @@ export default function ProductReviewsPage() {
       product.image ||
       product.image_url ||
       (product.product_detail && product.product_detail.image_url) ||
-      (product.thumbnail_images && product.thumbnail_images.length > 0 && product.thumbnail_images[0]) ||
+      (product.thumbnail_images &&
+        product.thumbnail_images.length > 0 &&
+        product.thumbnail_images[0]) ||
       "";
 
     // Print debug info
-    console.log("Product image data:", { 
+    console.log("Product image data:", {
       product_id: product.id,
       name: product.name,
-      image: product.image, 
-      image_url: product.image_url, 
-      thumbnail_images: product.thumbnail_images
+      image: product.image,
+      image_url: product.image_url,
+      thumbnail_images: product.thumbnail_images,
     });
 
     // Jika tidak ada URL, langsung kembalikan placeholder
@@ -165,8 +171,9 @@ export default function ProductReviewsPage() {
 
     try {
       // Perbaiki path media
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-      const backendBaseUrl = apiUrl.replace('/api', '');  // Remove '/api' if present to get base URL
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://10.34.100.143:8000/api";
+      const backendBaseUrl = apiUrl.replace("/api", ""); // Remove '/api' if present to get base URL
 
       // Hapus '/api' jika ada di awal path
       let cleanUrl = imageUrl;
@@ -220,10 +227,10 @@ export default function ProductReviewsPage() {
     setIsCreatingTestOrders(true);
     try {
       await createTestOrders();
-      toast.success('Test orders created successfully!');
+      toast.success("Test orders created successfully!");
       await fetchData(); // Reload data after creating test orders
     } catch (error) {
-      console.error('Error creating test orders:', error);
+      console.error("Error creating test orders:", error);
       toast.error(`Failed to create test orders: ${error.message}`);
     } finally {
       setIsCreatingTestOrders(false);
@@ -234,18 +241,23 @@ export default function ProductReviewsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <h1 className="text-2xl font-bold mb-8">Product Reviews</h1>
-        {Array(4).fill(0).map((_, index) => (
-          <div key={`loading-item-${index}`} className="w-full max-w-3xl bg-white rounded-lg shadow-md p-6 mb-6 animate-pulse">
-            <div className="flex items-start">
-              <div className="h-16 w-16 bg-gray-300 rounded-md mr-4"></div>
-              <div className="flex-1">
-                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-300 rounded w-1/2 mb-2"></div>
-                <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+        {Array(4)
+          .fill(0)
+          .map((_, index) => (
+            <div
+              key={`loading-item-${index}`}
+              className="w-full max-w-3xl bg-white rounded-lg shadow-md p-6 mb-6 animate-pulse"
+            >
+              <div className="flex items-start">
+                <div className="h-16 w-16 bg-gray-300 rounded-md mr-4"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-300 rounded w-1/2 mb-2"></div>
+                  <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     );
   }
@@ -282,7 +294,9 @@ export default function ProductReviewsPage() {
 
       {purchasedProducts.length === 0 ? (
         <div className="text-center py-10">
-          <p className="text-lg mb-6">Anda belum pernah membeli produk apapun.</p>
+          <p className="text-lg mb-6">
+            Anda belum pernah membeli produk apapun.
+          </p>
           <div className="flex space-x-4 justify-center">
             <Link
               href="/products"
@@ -295,7 +309,9 @@ export default function ProductReviewsPage() {
               disabled={isCreatingTestOrders}
               className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
             >
-              {isCreatingTestOrders ? "Membuat Data Test..." : "Buat Data Test Untuk Review"}
+              {isCreatingTestOrders
+                ? "Membuat Data Test..."
+                : "Buat Data Test Untuk Review"}
             </button>
           </div>
         </div>
@@ -333,7 +349,7 @@ export default function ProductReviewsPage() {
             purchasedProducts.map((product) => {
               const productId = product.id || product.product_id;
               const hasReviewed = !!reviews[productId];
-              
+
               return (
                 <div
                   key={productId}
@@ -350,7 +366,12 @@ export default function ProductReviewsPage() {
                         // Provide a fallback image
                         e.currentTarget.src = "/images/placeholder.jpg";
                         // Log for debugging
-                        console.log("Image loading failed for:", product.title || product.name, "URL:", e.currentTarget.src);
+                        console.log(
+                          "Image loading failed for:",
+                          product.title || product.name,
+                          "URL:",
+                          e.currentTarget.src
+                        );
                       }}
                     />
                   </div>
