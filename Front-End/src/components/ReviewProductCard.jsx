@@ -72,7 +72,7 @@ export default function ReviewProductCard({
       </div>
 
       {/* Comment */}
-      <p className="text-sm text-gray-600 leading-relaxed">{comment}</p>
+      <p className="text-sm text-gray-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: comment }}></p>
     </div>
   );
 }

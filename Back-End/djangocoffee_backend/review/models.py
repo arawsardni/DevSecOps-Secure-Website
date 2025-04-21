@@ -41,13 +41,28 @@ class Review(models.Model):
         return f"Review by {self.user.email} for {self.product.name} - {self.get_rating_display()}"
     
     def save(self, *args, **kwargs):
-        # Periksa apakah ini adalah review baru (belum ada di database)
+        # Simpan rating lama jika ini adalah update
+        old_rating = None
+        if self.pk is not None:
+            try:
+                old_review = Review.objects.get(pk=self.pk)
+                old_rating = old_review.rating
+            except Review.DoesNotExist:
+                pass
+        
+        # Periksa apakah ini adalah review baru
         is_new = self.pk is None
         
+        # Simpan review
         super().save(*args, **kwargs)
         
-        # Update rating produk jika review baru atau rating berubah
+        # Update rating produk
         if is_new:
+            print(f"Updating product rating for new review: {self.product.name}, rating: {self.rating}")
+            self.product.update_rating(self.rating)
+        elif old_rating and old_rating != self.rating:
+            print(f"Updating product rating for changed review: {self.product.name}, old: {old_rating}, new: {self.rating}")
+            # Jika rating berubah, perbarui rating produk
             self.product.update_rating(self.rating)
 
 class ReviewLike(models.Model):

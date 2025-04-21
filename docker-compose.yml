@@ -43,12 +43,14 @@ services:
     container_name: postgres_db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      - ./initdb:/docker-entrypoint-initdb.d
     environment:
       - POSTGRES_USER=postgresuser
       - POSTGRES_PASSWORD=postgrespassword
       - POSTGRES_DB=djangocoffee
     networks:
       - app-network
+
 
 networks:
   app-network:

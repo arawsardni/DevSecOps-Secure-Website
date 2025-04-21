@@ -426,7 +426,8 @@ def user_purchased_products(request, user_id):
         # Ambil semua item dari pesanan yang sudah selesai
         order_items = OrderItem.objects.filter(
             order__user_id=user_id,
-            order__status='completed'
+            # order__status='completed',
+            order__payment_status='paid'
         ).select_related(
             'product', 
             'order'
@@ -434,18 +435,32 @@ def user_purchased_products(request, user_id):
             'product__category'
         ).order_by('-order__created_at')  # Order by most recent orders first
         
-        # Gunakan dict untuk menyimpan produk unik (dengan prioritas)
+        # Gunakan dict untuk menyimpan produk unik
         processed_products = {}
         
-        # Ambil produk unik dari order items dengan prioritas pada pesanan normal vs test
+        # Debugging info
+        print(f"Found {order_items.count()} order items for user {user_id}")
+        
+        # Ambil produk unik dari order items
         for item in order_items:
-            product_id = item.product.id
+            product_id = str(item.product.id)
             
-            # Skip if we already have this product from a non-test order
+            # Periksa apakah ini order test
             is_test_order = item.order.order_number.startswith('TST')
-            if product_id in processed_products and not processed_products[product_id].get('is_test_order', False):
-                continue
+            
+            # Jika produk sudah ada dalam dictionary dan ada dari NON-test order, 
+            # prioritaskan yang non-test (JANGAN SKIP!)
+            if product_id in processed_products:
+                existing_is_test = processed_products[product_id].get('is_test_order', False)
                 
+                # Jika item baru adalah non-test dan yang sudah ada adalah test, ganti dengan yang non-test
+                if existing_is_test and not is_test_order:
+                    # Ganti dengan yang non-test
+                    pass
+                elif not existing_is_test and is_test_order:
+                    # Skip item test jika sudah ada yang non-test
+                    continue
+            
             # Format data produk dengan informasi lebih lengkap
             product_obj = item.product
             product_data = {
@@ -466,9 +481,8 @@ def user_purchased_products(request, user_id):
                 'last_purchased_at': item.order.completed_at or item.order.created_at
             }
             
-            # Add or replace in our dictionary (replace only if this is a non-test order or if we only have a test order)
-            if product_id not in processed_products or is_test_order == False:
-                processed_products[product_id] = product_data
+            # Selalu tambahkan ke dictionary (baik test maupun non-test)
+            processed_products[product_id] = product_data
         
         # Convert dict to list, sorted by most recently purchased first
         unique_products = list(processed_products.values())
@@ -479,7 +493,11 @@ def user_purchased_products(request, user_id):
             if 'is_test_order' in product:
                 del product['is_test_order']
                 
-        print(f"Found {len(unique_products)} unique purchased products for user {user_id}")
+        print(f"Returning {len(unique_products)} unique purchased products for user {user_id}")
+        # Debug informasi produk
+        for prod in unique_products:
+            print(f"Product: {prod['name']}, Order: {prod['order_number']}")
+            
         return Response(unique_products)
 
     except Exception as e:
