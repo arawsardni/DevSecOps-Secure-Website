@@ -4,10 +4,14 @@ from .models import Product, Category
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name', 'description', 'image', 'is_active']
+        fields = ['id', 'name', 'description', 'is_active']
 
 class ProductListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
+    image_url = serializers.SerializerMethodField()
+    
+    def get_image_url(self, obj):
+        return obj.image_url()
     
     class Meta:
         model = Product
@@ -22,11 +26,16 @@ class ProductListSerializer(serializers.ModelSerializer):
             'is_available',
             'is_featured',
             'is_bestseller',
-            'preparation_time'
+            'preparation_time',
+            'total_sold'
         )
         
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
+    image_url = serializers.SerializerMethodField()
+    
+    def get_image_url(self, obj):
+        return obj.image_url()
     
     class Meta:
         model = Product

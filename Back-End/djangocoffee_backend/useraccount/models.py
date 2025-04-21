@@ -1,4 +1,5 @@
 import uuid
+import json
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 
@@ -26,6 +27,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     avatar = models.ImageField(upload_to='uploads/avatars', blank=True, null=True)
     address = models.TextField(blank=True, null=True)
+    user_addresses = models.TextField(blank=True, null=True)  # JSON string of addresses array
+    mainAddress = models.IntegerField(blank=True, null=True)  # Index of the main address
     preferred_pickup_location = models.CharField(max_length=255, blank=True, null=True)
     points = models.IntegerField(default=0)  # Untuk sistem loyalty
     total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -50,3 +53,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.name.split()[0] if self.name else self.email
+    
+    def get_addresses(self):
+        if not self.user_addresses:
+            return []
+        try:
+            return json.loads(self.user_addresses)
+        except:
+            return []
+    
+    def set_addresses(self, addresses_list):
+        self.user_addresses = json.dumps(addresses_list)
+        self.save()

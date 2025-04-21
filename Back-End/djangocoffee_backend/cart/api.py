@@ -57,6 +57,9 @@ def add_to_cart(request):
         product_id = serializer.validated_data['product_id']
         quantity = serializer.validated_data['quantity']
         size = serializer.validated_data.get('size')
+        sugar = serializer.validated_data.get('sugar', 'normal')
+        ice = serializer.validated_data.get('ice', 'normal')
+        shots = serializer.validated_data.get('shots', 0)
         special_instructions = serializer.validated_data.get('special_instructions', '')
         
         try:
@@ -69,11 +72,14 @@ def add_to_cart(request):
                 
             cart = get_or_create_cart(request)
             
-            # Cek apakah item sudah ada di keranjang
+            # Cek apakah item sudah ada di keranjang dengan spesifikasi yang sama
             cart_item, created = CartItem.objects.get_or_create(
                 cart=cart,
                 product=product,
                 size=size,
+                sugar=sugar,
+                ice=ice,
+                shots=shots,
                 defaults={
                     'quantity': quantity,
                     'special_instructions': special_instructions
@@ -115,7 +121,22 @@ def update_cart_item(request, item_id):
     serializer = UpdateCartItemSerializer(data=request.data)
     if serializer.is_valid():
         quantity = serializer.validated_data['quantity']
-        special_instructions = serializer.validated_data.get('special_instructions')
+        
+        # Update fields hanya jika mereka disediakan
+        if 'size' in serializer.validated_data:
+            cart_item.size = serializer.validated_data['size']
+        
+        if 'sugar' in serializer.validated_data:
+            cart_item.sugar = serializer.validated_data['sugar']
+            
+        if 'ice' in serializer.validated_data:
+            cart_item.ice = serializer.validated_data['ice']
+            
+        if 'shots' in serializer.validated_data:
+            cart_item.shots = serializer.validated_data['shots']
+            
+        if 'special_instructions' in serializer.validated_data:
+            cart_item.special_instructions = serializer.validated_data['special_instructions']
         
         # Cek stok produk
         if cart_item.product.stock < quantity:
@@ -125,8 +146,6 @@ def update_cart_item(request, item_id):
             )
             
         cart_item.quantity = quantity
-        if special_instructions is not None:
-            cart_item.special_instructions = special_instructions
         cart_item.save()
         
         cart_serializer = CartSerializer(cart)
@@ -188,6 +207,9 @@ def merge_carts(request):
                 cart=user_cart,
                 product=item.product,
                 size=item.size,
+                sugar=item.sugar,
+                ice=item.ice,
+                shots=item.shots,
                 defaults={
                     'quantity': item.quantity,
                     'special_instructions': item.special_instructions
@@ -202,8 +224,12 @@ def merge_carts(request):
         # Hapus guest cart
         guest_cart.delete()
         
-        serializer = CartSerializer(user_cart)
-        return Response(serializer.data)
-        
+        # Hapus session_id dari session
+        if 'cart_id' in request.session:
+            del request.session['cart_id']
+            
+        cart_serializer = CartSerializer(user_cart)
+        return Response(cart_serializer.data)
+    
     except Cart.DoesNotExist:
         return Response({'message': 'Tidak ada keranjang guest untuk dipindahkan'}) 

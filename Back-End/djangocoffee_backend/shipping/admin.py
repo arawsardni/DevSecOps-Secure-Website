@@ -74,8 +74,8 @@ class ShippingMethodAdmin(admin.ModelAdmin):
 @admin.register(ShippingRate)
 class ShippingRateAdmin(admin.ModelAdmin):
     list_display = ('shipping_method_name', 'route_display', 'price_display', 'weight_range', 'estimated_delivery', 'is_active')
-    list_filter = ('shipping_method__provider', 'shipping_method', 'is_active', 'origin_province', 'destination_province')
-    search_fields = ('shipping_method__name', 'origin_city__name', 'destination_city__name')
+    list_filter = ('shipping_method__provider', 'shipping_method', 'is_active')
+    search_fields = ('shipping_method__name', 'origin_location', 'destination_location')
     readonly_fields = ('created_at', 'updated_at')
     
     fieldsets = (
@@ -83,7 +83,7 @@ class ShippingRateAdmin(admin.ModelAdmin):
             'fields': ('shipping_method',)
         }),
         ('Rute', {
-            'fields': ('origin_province', 'origin_city', 'destination_province', 'destination_city')
+            'fields': ('origin_location', 'destination_location')
         }),
         ('Harga & Berat', {
             'fields': ('price', 'min_weight', 'max_weight', 'price_per_kg')
@@ -101,7 +101,7 @@ class ShippingRateAdmin(admin.ModelAdmin):
         return str(obj.shipping_method)
     
     def route_display(self, obj):
-        return f"{obj.origin_city.name} → {obj.destination_city.name}"
+        return f"{obj.origin_location} → {obj.destination_location}"
     
     def price_display(self, obj):
         base_price = f"Rp {obj.price:,.0f}"
@@ -241,12 +241,12 @@ class ShipmentTrackingAdmin(admin.ModelAdmin):
 
 @admin.register(ShippingConfiguration)
 class ShippingConfigurationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'default_origin_city_display', 'min_order_free_shipping', 'flat_shipping_cost', 'use_flat_shipping')
+    list_display = ('id', 'default_origin_location_display', 'min_order_free_shipping', 'flat_shipping_cost', 'use_flat_shipping')
     readonly_fields = ('created_at', 'updated_at')
     
     fieldsets = (
         ('Default Origin', {
-            'fields': ('default_origin_province', 'default_origin_city')
+            'fields': ('default_origin_location',)
         }),
         ('Pengaturan Biaya', {
             'fields': ('min_order_free_shipping', 'flat_shipping_cost', 'use_flat_shipping')
@@ -260,12 +260,12 @@ class ShippingConfigurationAdmin(admin.ModelAdmin):
         }),
     )
     
-    def default_origin_city_display(self, obj):
-        if obj.default_origin_city:
-            return f"{obj.default_origin_city.name}, {obj.default_origin_province.name}"
+    def default_origin_location_display(self, obj):
+        if obj.default_origin_location:
+            return obj.default_origin_location
         return "-"
     
-    default_origin_city_display.short_description = 'Default Origin'
+    default_origin_location_display.short_description = 'Default Origin'
     
     def has_add_permission(self, request):
         # Hanya boleh ada 1 instance

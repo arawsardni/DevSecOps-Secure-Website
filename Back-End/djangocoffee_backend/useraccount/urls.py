@@ -7,4 +7,5 @@ urlpatterns = [
     path('logout/', api.logout, name='api_logout'),
     path('profile/', api.user_profile, name='api_user_profile'),
     path('profile/update/', api.update_profile, name='api_update_profile'),
+    path('profile/addresses/update/', api.update_addresses, name='api_update_addresses'),
 ]

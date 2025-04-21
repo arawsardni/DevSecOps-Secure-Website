@@ -3,16 +3,20 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { loginUser } from "@/services/api";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (localStorage.getItem("user")) {
+    setIsClient(true);
+    // Cek jika user sudah login
+    if (typeof window !== 'undefined' && localStorage.getItem("access_token")) {
       router.push("/");
     }
   }, [router]);
@@ -29,27 +33,39 @@ export default function LoginForm() {
     }
 
     try {
-      const res = await fetch("http://localhost:8000/api/auth/login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      // Format credentials as expected by Django REST framework
+      const credentials = {
+        email: email,
+        password: password
+      };
+      
+      console.log("Sending login credentials:", credentials);
+      const data = await loginUser(credentials);
 
-      const data = await res.json();
+      console.log("Login successful:", data);
 
-      if (res.ok) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-        localStorage.setItem("access", data.access);
-        localStorage.setItem("refresh", data.refresh);
-        router.push("/");
-      } else {
-        setError(data.message || "Email atau password salah");
+      // Simpan token dan user data
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("access_token", data.access);
+        localStorage.setItem("refresh_token", data.refresh);
+        localStorage.setItem("user_data", JSON.stringify(data.user));
+
+        // Simpan user_id untuk mengidentifikasi cart
+        if (data.user && data.user.id) {
+          localStorage.setItem("user_id", data.user.id);
+        }
+
+        // Trigger custom event untuk memperbarui UI
+        const userLoginEvent = new CustomEvent("user-login", {
+          detail: { userData: data.user },
+        });
+        window.dispatchEvent(userLoginEvent);
       }
+
+      router.push("/");
     } catch (err) {
       console.error("Login error:", err);
-      setError("Gagal menghubungi server");
+      setError(err.message || "Email atau password salah");
     } finally {
       setLoading(false);
     }
@@ -65,7 +81,10 @@ export default function LoginForm() {
         )}
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700"
+          >
             Email
           </label>
           <input
@@ -81,7 +100,10 @@ export default function LoginForm() {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-gray-700"
+          >
             Password
           </label>
           <input
@@ -104,12 +126,18 @@ export default function LoginForm() {
               type="checkbox"
               className="w-4 h-4 text-brown-600 border-gray-300 rounded focus:ring-brown-500"
             />
-            <label htmlFor="remember-me" className="block ml-2 text-sm text-gray-700">
+            <label
+              htmlFor="remember-me"
+              className="block ml-2 text-sm text-gray-700"
+            >
               Ingat saya
             </label>
           </div>
           <div className="text-sm">
-            <Link href="#" className="font-medium text-brown-600 hover:text-brown-500">
+            <Link
+              href="#"
+              className="font-medium text-brown-600 hover:text-brown-500"
+            >
               Lupa password?
             </Link>
           </div>
@@ -129,7 +157,10 @@ export default function LoginForm() {
         <div className="text-sm text-center">
           <p className="text-gray-600">
             Belum punya akun?{" "}
-            <Link href="/register" className="font-medium text-brown-600 hover:text-brown-500">
+            <Link
+              href="/register"
+              className="font-medium text-brown-600 hover:text-brown-500"
+            >
               Daftar disini
             </Link>
           </p>

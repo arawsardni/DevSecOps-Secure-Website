@@ -9,7 +9,8 @@ class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
         fields = ('id', 'product', 'product_detail', 'quantity', 'size', 
-                 'special_instructions', 'total_price', 'created_at')
+                 'sugar', 'ice', 'shots', 'special_instructions', 
+                 'total_price', 'created_at')
         read_only_fields = ('id', 'created_at')
     
     def get_total_price(self, obj):
@@ -35,8 +36,15 @@ class AddToCartSerializer(serializers.Serializer):
     product_id = serializers.UUIDField()
     quantity = serializers.IntegerField(min_value=1, default=1)
     size = serializers.ChoiceField(choices=CartItem._meta.get_field('size').choices, allow_blank=True, allow_null=True)
+    sugar = serializers.ChoiceField(choices=CartItem.SUGAR_CHOICES, default='normal', allow_blank=True, allow_null=True)
+    ice = serializers.ChoiceField(choices=CartItem.ICE_CHOICES, default='normal', allow_blank=True, allow_null=True) 
+    shots = serializers.IntegerField(min_value=0, default=0, required=False)
     special_instructions = serializers.CharField(allow_blank=True, required=False)
 
 class UpdateCartItemSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(min_value=1)
+    size = serializers.ChoiceField(choices=CartItem._meta.get_field('size').choices, allow_blank=True, allow_null=True, required=False)
+    sugar = serializers.ChoiceField(choices=CartItem.SUGAR_CHOICES, allow_blank=True, allow_null=True, required=False) 
+    ice = serializers.ChoiceField(choices=CartItem.ICE_CHOICES, allow_blank=True, allow_null=True, required=False)
+    shots = serializers.IntegerField(min_value=0, required=False)
     special_instructions = serializers.CharField(allow_blank=True, required=False) 

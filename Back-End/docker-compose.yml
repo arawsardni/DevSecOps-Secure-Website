@@ -1,23 +1,58 @@
 services:
-  web:
+  backend:
     build: ./djangocoffee_backend
-    command: python manage.py runserver 0.0.0.0:8000
+    container_name: django_backend
+    command: >
+      bash -c "
+        python manage.py makemigrations &&
+        python manage.py migrate &&
+        python manage.py runserver 0.0.0.0:8000
+      "
     volumes:
       - ./djangocoffee_backend/:/usr/src/djangocoffee_backend
     ports:
       - 8000:8000
     env_file:
       - ./.env.dev
+    environment:
+      - DJANGO_ALLOWED_HOSTS=localhost localhost:8000 127.0.0.1 [::1] backend frontend
     depends_on:
       - db
+    networks:
+      - app-network
+  
+  frontend:
+    build: ./Front-End
+    container_name: nextjs_frontend
+    ports:
+      - 3000:3000
+    depends_on:
+      - backend
+    volumes:
+      - ./Front-End:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000/api
+      - NEXT_PUBLIC_BROWSER_API_URL=http://localhost:8000/api
+      - NODE_ENV=development
+    networks:
+      - app-network
+  
   db:
     image: postgres:15
+    container_name: postgres_db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
       - POSTGRES_USER=postgresuser
       - POSTGRES_PASSWORD=postgrespassword
       - POSTGRES_DB=djangocoffee
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   postgres_data:

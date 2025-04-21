@@ -2,7 +2,7 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
-from address.models import City, Province
+from django.utils.translation import gettext_lazy as _
 
 class ShippingProvider(models.Model):
     """
@@ -91,10 +91,11 @@ class ShippingRate(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     shipping_method = models.ForeignKey(ShippingMethod, on_delete=models.CASCADE, related_name='rates')
-    origin_province = models.ForeignKey(Province, on_delete=models.CASCADE, related_name='origin_rates')
-    origin_city = models.ForeignKey(City, on_delete=models.CASCADE, related_name='origin_rates')
-    destination_province = models.ForeignKey(Province, on_delete=models.CASCADE, related_name='destination_rates')
-    destination_city = models.ForeignKey(City, on_delete=models.CASCADE, related_name='destination_rates')
+    
+    # Simpan informasi origin dan destination sebagai string
+    origin_location = models.CharField(max_length=255, help_text="Lokasi asal pengiriman")
+    destination_location = models.CharField(max_length=255, help_text="Lokasi tujuan pengiriman")
+    
     price = models.DecimalField(max_digits=10, decimal_places=2)
     min_weight = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     max_weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
@@ -108,10 +109,10 @@ class ShippingRate(models.Model):
     class Meta:
         verbose_name = "Tarif Pengiriman"
         verbose_name_plural = "Tarif Pengiriman"
-        unique_together = ('shipping_method', 'origin_city', 'destination_city', 'min_weight')
+        unique_together = ('shipping_method', 'origin_location', 'destination_location', 'min_weight')
     
     def __str__(self):
-        return f"{self.shipping_method} ({self.origin_city.name} - {self.destination_city.name})"
+        return f"{self.shipping_method} ({self.origin_location} - {self.destination_location})"
     
     def calculate_price(self, weight_in_kg):
         """
@@ -203,15 +204,14 @@ class ShipmentTracking(models.Model):
         verbose_name_plural = "Tracking Pengiriman"
     
     def __str__(self):
-        return f"{self.shipment} - {self.get_status_display()} ({self.timestamp.strftime('%d/%m/%Y %H:%M')})"
+        return f"{self.shipment.tracking_number} - {self.get_status_display()}"
 
 class ShippingConfiguration(models.Model):
     """
     Model untuk konfigurasi pengiriman global
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    default_origin_province = models.ForeignKey(Province, on_delete=models.SET_NULL, null=True, blank=True, related_name='default_shipping_config')
-    default_origin_city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, related_name='default_shipping_config')
+    default_origin_location = models.CharField(max_length=255, blank=True, null=True, help_text="Lokasi asal pengiriman default")
     min_order_free_shipping = models.DecimalField(max_digits=10, decimal_places=2, default=0.0, help_text="Jumlah minimum order untuk mendapatkan pengiriman gratis (0 untuk menonaktifkan)")
     flat_shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.0, help_text="Biaya pengiriman flat jika tidak menggunakan perhitungan otomatis")
     use_flat_shipping = models.BooleanField(default=False, help_text="Gunakan biaya pengiriman flat alih-alih perhitungan otomatis")
@@ -231,14 +231,18 @@ class ShippingConfiguration(models.Model):
     def save(self, *args, **kwargs):
         # Pastikan hanya ada 1 instance
         if not self.pk and ShippingConfiguration.objects.exists():
-            # Update instance yang sudah ada
+            # Update instance yang sudah ada jika instance baru dibuat
             existing = ShippingConfiguration.objects.first()
-            existing.default_origin_province = self.default_origin_province
-            existing.default_origin_city = self.default_origin_city
-            existing.min_order_free_shipping = self.min_order_free_shipping
-            existing.flat_shipping_cost = self.flat_shipping_cost
-            existing.use_flat_shipping = self.use_flat_shipping
-            existing.default_weight_per_item = self.default_weight_per_item
+            if 'default_origin_location' in kwargs:
+                existing.default_origin_location = self.default_origin_location
+            if 'min_order_free_shipping' in kwargs:
+                existing.min_order_free_shipping = self.min_order_free_shipping
+            if 'flat_shipping_cost' in kwargs:
+                existing.flat_shipping_cost = self.flat_shipping_cost
+            if 'use_flat_shipping' in kwargs:
+                existing.use_flat_shipping = self.use_flat_shipping
+            if 'default_weight_per_item' in kwargs:
+                existing.default_weight_per_item = self.default_weight_per_item
             existing.save()
             return existing
         return super().save(*args, **kwargs)
@@ -246,7 +250,9 @@ class ShippingConfiguration(models.Model):
     @classmethod
     def get_instance(cls):
         """
-        Mendapatkan instance konfigurasi, atau membuat jika belum ada
+        Mendapatkan atau membuat instance konfigurasi
         """
-        instance, created = cls.objects.get_or_create()
-        return instance
+        try:
+            return cls.objects.first()
+        except cls.DoesNotExist:
+            return cls.objects.create()

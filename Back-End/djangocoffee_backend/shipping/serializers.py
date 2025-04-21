@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from address.serializers import CitySerializer, ProvinceSerializer
 from .models import (
     ShippingProvider, ShippingMethod, ShippingRate, 
     Shipment, ShipmentTracking, ShippingConfiguration
@@ -57,27 +56,18 @@ class ShippingProviderDetailSerializer(serializers.ModelSerializer):
 class ShippingRateSerializer(serializers.ModelSerializer):
     """Serializer untuk shipping rate"""
     shipping_method_name = serializers.SerializerMethodField()
-    origin_city_name = serializers.SerializerMethodField()
-    destination_city_name = serializers.SerializerMethodField()
     
     class Meta:
         model = ShippingRate
         fields = [
             'id', 'shipping_method', 'shipping_method_name',
-            'origin_province', 'origin_city', 'origin_city_name',
-            'destination_province', 'destination_city', 'destination_city_name',
+            'origin_location', 'destination_location',
             'price', 'min_weight', 'max_weight', 'price_per_kg',
             'estimated_days_min', 'estimated_days_max', 'is_active'
         ]
     
     def get_shipping_method_name(self, obj):
         return str(obj.shipping_method) if obj.shipping_method else None
-    
-    def get_origin_city_name(self, obj):
-        return f"{obj.origin_city.name}, {obj.origin_province.name}" if obj.origin_city else None
-    
-    def get_destination_city_name(self, obj):
-        return f"{obj.destination_city.name}, {obj.destination_province.name}" if obj.destination_city else None
 
 class ShipmentTrackingSerializer(serializers.ModelSerializer):
     """Serializer untuk riwayat tracking shipment"""
@@ -198,51 +188,43 @@ class UpdateShipmentStatusSerializer(serializers.ModelSerializer):
             validated_data['actual_delivery'] = serializers.DateTimeField().to_representation(serializers.DateTimeField().to_internal_value(None))
         
         # Update shipment
-        shipment = super().update(instance, validated_data)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
         
-        # Buat tracking log
+        # Buat tracking entry baru
         ShipmentTracking.objects.create(
-            shipment=shipment,
-            status=shipment.status,
+            shipment=instance,
+            status=instance.status,
             location=location,
             description=description
         )
         
-        return shipment
+        return instance
 
 class ShippingConfigurationSerializer(serializers.ModelSerializer):
     """Serializer untuk konfigurasi pengiriman"""
-    default_origin_province_name = serializers.SerializerMethodField()
-    default_origin_city_name = serializers.SerializerMethodField()
     
     class Meta:
         model = ShippingConfiguration
         fields = [
-            'id', 'default_origin_province', 'default_origin_province_name',
-            'default_origin_city', 'default_origin_city_name',
-            'min_order_free_shipping', 'flat_shipping_cost',
-            'use_flat_shipping', 'default_weight_per_item'
+            'id', 'default_origin_location', 'min_order_free_shipping', 
+            'flat_shipping_cost', 'use_flat_shipping', 'default_weight_per_item'
         ]
-    
-    def get_default_origin_province_name(self, obj):
-        return obj.default_origin_province.name if obj.default_origin_province else None
-    
-    def get_default_origin_city_name(self, obj):
-        return obj.default_origin_city.name if obj.default_origin_city else None
 
 class ShippingRateCalculationSerializer(serializers.Serializer):
     """Serializer untuk kalkulasi shipping rate"""
-    origin_city = serializers.UUIDField(required=False)
-    destination_city = serializers.UUIDField(required=True)
+    origin_location = serializers.CharField(required=False)
+    destination_location = serializers.CharField(required=True)
     weight = serializers.DecimalField(max_digits=6, decimal_places=2, required=True)
     shipping_method = serializers.UUIDField(required=False)
     
     def validate(self, data):
-        # Jika origin_city tidak ada, gunakan default dari konfigurasi
-        if not data.get('origin_city'):
+        # Jika origin_location tidak ada, gunakan default dari konfigurasi
+        if 'origin_location' not in data or not data['origin_location']:
             config = ShippingConfiguration.get_instance()
-            if not config.default_origin_city:
-                raise serializers.ValidationError({"origin_city": "Kota asal tidak ditemukan"})
-            data['origin_city'] = config.default_origin_city.id
-        
+            if not config or not config.default_origin_location:
+                raise serializers.ValidationError("Lokasi asal harus ditentukan")
+            data['origin_location'] = config.default_origin_location
+            
         return data 

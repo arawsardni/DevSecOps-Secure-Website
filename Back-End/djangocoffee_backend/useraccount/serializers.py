@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
+import json
 
 User = get_user_model()
 
@@ -36,16 +37,42 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
 class UserSerializer(serializers.ModelSerializer):
+    addresses = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
             'id', 'email', 'name', 'phone_number', 'avatar', 'address',
+            'user_addresses', 'addresses', 'mainAddress', 
             'preferred_pickup_location', 'points', 'total_spent', 'is_staff',
             'date_joined', 'last_login'
         ]
         read_only_fields = ['points', 'total_spent', 'date_joined', 'last_login']
+    
+    def get_addresses(self, obj):
+        return obj.get_addresses()
+
+    def get_avatar(self, obj):
+        if obj.avatar:
+            return obj.avatar.url
+        return None
 
 class UserUpdateSerializer(serializers.ModelSerializer):
+    addresses = serializers.JSONField(required=False, write_only=True)
+    avatar = serializers.ImageField(required=False, allow_null=True)
+    
     class Meta:
         model = User
-        fields = ['name', 'phone_number', 'avatar', 'address', 'preferred_pickup_location']
+        fields = ['name', 'phone_number', 'avatar', 'address', 'user_addresses', 'addresses', 'mainAddress', 'preferred_pickup_location']
+    
+    def update(self, instance, validated_data):
+        addresses = validated_data.pop('addresses', None)
+        if addresses is not None:
+            instance.user_addresses = json.dumps(addresses)
+        
+        # Jika ada avatar baru, hapus avatar lama
+        if 'avatar' in validated_data and instance.avatar:
+            instance.avatar.delete(save=False)
+        
+        return super().update(instance, validated_data)

@@ -2,9 +2,11 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { registerUser } from "@/services/api";
 
 export default function RegisterForm() {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,26 +31,19 @@ export default function RegisterForm() {
     }
 
     try {
-      const res = await fetch("http://localhost:8000/api/auth/register/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      await registerUser({
+        email,
+        name,
+        password,
       });
-    
-      const data = await res.json();
-      console.log("Response status:", res.status);
-      console.log("Response data:", data);
-    
-      if (res.ok) {
-        router.push("/login");
-      } else {
-        setError(data.message || "Terjadi kesalahan saat mendaftar");
-      }
+
+      // Redirect ke halaman login setelah berhasil daftar
+      router.push("/login?registered=true");
     } catch (err) {
-      console.error("Network error:", err);
-      setError("Gagal menghubungi server");
+      console.error("Registration error:", err);
+      setError(err.message || "Terjadi kesalahan saat mendaftar");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,6 +72,27 @@ export default function RegisterForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brown-500 focus:border-brown-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Nama Lengkap
+          </label>
+          <div className="mt-1">
+            <input
+              id="name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brown-500 focus:border-brown-500"
             />
           </div>
@@ -140,7 +156,6 @@ export default function RegisterForm() {
             Sudah punya akun?{" "}
             <Link
               href="/login"
-              onClick={() => router.push("/login")}
               className="font-medium text-brown-600 hover:text-brown-500"
             >
               Masuk disini
