@@ -824,6 +824,135 @@ export const addProductReview = async (reviewData) => {
   }
 };
 
+/**
+ * Update an existing product review
+ * @param {string} reviewId - ID of the review to update
+ * @param {Object} reviewData - The updated review data
+ * @returns {Promise<Object>} The updated review
+ */
+export const updateProductReview = async (reviewId, reviewData) => {
+  try {
+    // Validasi data review
+    if (!reviewId || !reviewData.rating) {
+      throw new Error("Data review tidak lengkap");
+    }
+
+    // Dapatkan token autentikasi
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      throw new Error("Anda harus login untuk mengubah review");
+    }
+
+    console.log("Updating review with ID:", reviewId);
+
+    // Format data untuk backend
+    const backendData = {
+      product: reviewData.productId,
+      rating: reviewData.rating,
+      comment: reviewData.comment || "",
+    };
+
+    console.log("Sending update review data:", backendData);
+
+    // Hapus dulu review yang sudah ada jika perlu
+    try {
+      console.log("Deleting existing review first to handle update issues");
+      const deleteResponse = await fetch(`${API_URL}/reviews/${reviewId}/`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!deleteResponse.ok) {
+        console.log(`Failed to delete old review: ${deleteResponse.status}. Will try direct creation.`);
+      } else {
+        console.log("Successfully deleted old review, creating new one");
+      }
+    } catch (deleteError) {
+      console.log("Error during delete operation:", deleteError);
+      // Lanjutkan meskipun gagal delete
+    }
+    
+    // Langsung create review baru
+    try {
+      const createResponse = await fetch(`${API_URL}/reviews/create/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(backendData),
+      });
+      
+      if (!createResponse.ok) {
+        const createErrorText = await createResponse.text();
+        console.error("Error creating review:", createErrorText);
+        throw new Error(`Gagal membuat review: ${createResponse.status}`);
+      }
+      
+      // Baca response dari create operation
+      const responseText = await createResponse.text();
+      console.log("Create review response text:", responseText);
+      
+      // Parse sebagai JSON
+      let updatedReview;
+      try {
+        updatedReview = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error("Error parsing create response:", parseError);
+        throw new Error("Format respons tidak valid");
+      }
+
+      // Format untuk frontend
+      const formattedReview = {
+        id: updatedReview.id,
+        productId: updatedReview.product,
+        userId: updatedReview.user,
+        user: updatedReview.user_detail?.name || "Anonymous",
+        rating: updatedReview.rating,
+        comment: updatedReview.comment,
+        createdAt: updatedReview.created_at,
+        updatedAt: updatedReview.updated_at,
+        avatar: updatedReview.user_detail?.avatar || null,
+        isApproved: updatedReview.is_approved,
+        isFeatured: updatedReview.is_featured,
+        likesCount: updatedReview.likes_count,
+      };
+
+      // Simpan ke localStorage
+      try {
+        const reviewsData = localStorage.getItem("product_reviews");
+        let reviews = reviewsData ? JSON.parse(reviewsData) : [];
+
+        // Cari indeks review yang akan diupdate
+        const reviewIndex = reviews.findIndex(
+          (review) => String(review.id) === String(reviewId)
+        );
+
+        // Update jika ditemukan, tambahkan jika tidak
+        if (reviewIndex !== -1) {
+          reviews[reviewIndex] = { ...reviews[reviewIndex], ...formattedReview };
+        } else {
+          reviews.push(formattedReview);
+        }
+
+        localStorage.setItem("product_reviews", JSON.stringify(reviews));
+      } catch (err) {
+        console.error("Error saving updated review to localStorage:", err);
+      }
+
+      return formattedReview;
+    } catch (createError) {
+      console.error("Error creating new review:", createError);
+      throw createError;
+    }
+  } catch (error) {
+    console.error("Error updating product review:", error);
+    throw error;
+  }
+};
+
 export const createTestOrders = async (token) => {
   try {
     if (!token) {

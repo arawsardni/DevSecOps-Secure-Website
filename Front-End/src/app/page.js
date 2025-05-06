@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import { Hero } from "./(Landing)/Hero";
-import { Recommended } from "./(Landing)/Recommended"; 
 import { Specialties } from "./(Landing)/Specialties";
 import AboutUs from "./(Landing)/AboutUs";
 import OurStory from "./(Landing)/OurStory";
@@ -21,7 +20,6 @@ export default function Home() {
         <div data-aos="fade-up"><Hero /></div>
         <div data-aos="fade-up" data-aos-delay="100"><AboutUs /></div>
         <div data-aos="fade-up" data-aos-delay="200"><Specialties /></div>
-        <div data-aos="fade-up" data-aos-delay="300"><Recommended /></div>
         <div data-aos="fade-up" data-aos-delay="500"><CustomerReviews /></div>
       </div>
     </div>

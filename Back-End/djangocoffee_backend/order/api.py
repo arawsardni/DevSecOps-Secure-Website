@@ -568,7 +568,7 @@ def create_test_orders(request):
 
     except Exception as e:
         print(f"Error creating test orders: {str(e)}")
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

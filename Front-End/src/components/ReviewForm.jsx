@@ -1,19 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { addProductReview } from "@/services/api";
+import { useState, useEffect } from "react";
+import { addProductReview, updateProductReview } from "@/services/api";
 
 export default function ReviewForm({
   productId,
   productName,
-  originalProduct = null,
+  originalReview = null,
   onReviewSubmitted,
 }) {
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
+  const [rating, setRating] = useState(originalReview ? originalReview.rating : 5);
+  const [comment, setComment] = useState(originalReview ? originalReview.comment : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [isUpdate, setIsUpdate] = useState(false);
+
+  useEffect(() => {
+    // Deteksi apakah ini mode update atau tambah review baru
+    if (originalReview) {
+      setIsUpdate(true);
+      setRating(originalReview.rating || 5);
+      setComment(originalReview.comment || "");
+    }
+  }, [originalReview]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,20 +61,30 @@ export default function ReviewForm({
         comment,
       };
 
-      // Send review to backend
-      const submittedReview = await addProductReview(reviewData);
+      let submittedReview;
+      
+      if (isUpdate && originalReview && originalReview.id) {
+        // Update existing review
+        submittedReview = await updateProductReview(originalReview.id, reviewData);
+        setSuccess(`Review berhasil diperbarui! Terima kasih atas masukan Anda.`);
+      } else {
+        // Create new review
+        submittedReview = await addProductReview(reviewData);
+        setSuccess(`Review berhasil ditambahkan! Terima kasih atas masukan Anda.`);
+      }
       
       // Update UI
       setSuccess(true);
-      setSuccess(`Review berhasil ditambahkan! Terima kasih atas masukan Anda.`);
       
-      // Reset form
-      setRating(5);
-      setComment("");
+      // Reset form if it's a new review
+      if (!isUpdate) {
+        setRating(5);
+        setComment("");
+      }
 
       // Call the callback to refresh parent component
       if (typeof onReviewSubmitted === "function") {
-        onReviewSubmitted();
+        onReviewSubmitted(submittedReview);
       }
     } catch (err) {
       console.error("Error submitting review:", err);
@@ -77,7 +97,8 @@ export default function ReviewForm({
   return (
     <div className="border rounded-lg p-4 bg-white shadow-sm">
       <h3 className="font-semibold text-lg mb-3">
-        Tambahkan Review untuk {productName}
+        {isUpdate ? "Edit Review untuk " : "Tambahkan Review untuk "} 
+        {productName}
       </h3>
 
       {error && (
@@ -140,7 +161,7 @@ export default function ReviewForm({
               : "bg-amber-600 hover:bg-amber-700"
           }`}
         >
-          {isSubmitting ? "Mengirim..." : "Kirim Review"}
+          {isSubmitting ? "Mengirim..." : isUpdate ? "Perbarui Review" : "Kirim Review"}
         </button>
       </form>
     </div>
