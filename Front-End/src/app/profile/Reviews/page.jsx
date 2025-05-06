@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   getPurchasedProducts,
   getProductReviews,
-  createTestOrders,
 } from "@/services/api";
 import ReviewForm from "@/components/ReviewForm";
 import { formatRupiah } from "@/utils/formatters";
@@ -19,7 +18,6 @@ export default function ProductReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [isCreatingTestOrders, setIsCreatingTestOrders] = useState(false);
 
   // Fungsi untuk memformat harga dengan benar
   const formatPrice = (price) => {
@@ -223,21 +221,7 @@ export default function ProductReviewsPage() {
     }
   };
 
-  const createTestOrdersHandler = async () => {
-    setIsCreatingTestOrders(true);
-    try {
-      await createTestOrders();
-      toast.success("Test orders created successfully!");
-      await fetchData(); // Reload data after creating test orders
-    } catch (error) {
-      console.error("Error creating test orders:", error);
-      toast.error(`Failed to create test orders: ${error.message}`);
-    } finally {
-      setIsCreatingTestOrders(false);
-    }
-  };
-
-  if (loading || isCreatingTestOrders) {
+  if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <h1 className="text-2xl font-bold mb-8">Product Reviews</h1>
@@ -275,15 +259,6 @@ export default function ProductReviewsPage() {
         >
           Coba Lagi
         </button>
-        {purchasedProducts.length === 0 && (
-          <button
-            onClick={createTestOrdersHandler}
-            disabled={isCreatingTestOrders}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            {isCreatingTestOrders ? "Membuat Data Test..." : "Buat Data Test"}
-          </button>
-        )}
       </div>
     );
   }
@@ -304,15 +279,6 @@ export default function ProductReviewsPage() {
             >
               Mulai Belanja
             </Link>
-            <button
-              onClick={createTestOrdersHandler}
-              disabled={isCreatingTestOrders}
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-            >
-              {isCreatingTestOrders
-                ? "Membuat Data Test..."
-                : "Buat Data Test Untuk Review"}
-            </button>
           </div>
         </div>
       ) : (

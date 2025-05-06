@@ -232,26 +232,8 @@ export default function OrdersPage() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Riwayat Pesanan</h1>
 
-      <div className="mb-4">
-        <button
-          onClick={() => router.push("/profile/PurchaseHistory")}
-          className="px-4 py-2 bg-[#8B4513] text-white rounded hover:bg-[#5A2E0D] transition-colors"
-        >
-          Lihat Produk yang Pernah Dibeli
-        </button>
-      </div>
-
       {orders.length > 0 ? (
         <>
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={clearAllOrders}
-              disabled={isClearing}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-red-300"
-            >
-              {isClearing ? "Menghapus..." : "Hapus Semua Riwayat"}
-            </button>
-          </div>
           <div className="space-y-6">
             {orders.map((order) => (
               <div

@@ -191,20 +191,62 @@ export const registerUser = async (userData) => {
 };
 
 export const logoutUser = async (token) => {
-  const response = await fetch(`${API_URL}/auth/logout/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  try {
+    const response = await fetch(`${API_URL}/auth/logout/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Logout failed");
+    // Bila status ok tapi tidak ada konten (204 No Content), segera return sukses
+    if (response.status === 204) {
+      return { success: true };
+    }
+
+    // Bila status tidak ok, coba parse error jika ada
+    if (!response.ok) {
+      try {
+        // Cek ukuran respons sebelum mencoba parse sebagai JSON
+        const text = await response.text();
+        
+        // Jika respons kosong, kembalikan sukses meskipun status error
+        if (!text || text.trim() === '') {
+          console.log("Empty response from logout API with status:", response.status);
+          return { success: true };
+        }
+        
+        // Coba parse respons jika tidak kosong
+        const error = JSON.parse(text);
+        throw new Error(error.error || error.detail || "Logout failed");
+      } catch (e) {
+        // Respons bukan JSON valid, tapi tetap lanjutkan proses logout
+        console.log("Non-JSON response from logout API:", e);
+        return { success: true };
+      }
+    }
+
+    // Cek apakah respons memiliki konten
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      try {
+        const data = await response.json();
+        return data;
+      } catch (e) {
+        // Respons bukan JSON valid tapi status OK
+        console.log("Invalid JSON in logout response:", e);
+        return { success: true };
+      }
+    }
+    
+    // Default: kembalikan sukses
+    return { success: true };
+  } catch (error) {
+    console.log("Logout error:", error);
+    // Tetap kembalikan sukses agar frontend tetap bisa logout lokal
+    return { success: true };
   }
-
-  return response.json();
 };
 
 // Profile API
@@ -226,22 +268,45 @@ export const getUserProfile = async (token) => {
 
     // Pastikan URL avatar lengkap dengan path yang benar
     if (data.avatar) {
-      // Avatar URL dari backend biasanya berupa path relatif seperti '/media/uploads/avatars/wahyu.jpg'
-      // Backend mengirimkan URL relatif tanpa host, jadi kita perlu menambahkan API_URL
-      if (!data.avatar.startsWith("http")) {
-        // Hapus '/api' jika ada di awal path (karena API_URL sudah mengandung /api)
-        if (data.avatar.startsWith("/api/")) {
-          data.avatar = data.avatar.substring(4); // Hapus '/api' dari awal
-        }
-
-        // Pastikan URL dimulai dengan garis miring
-        if (!data.avatar.startsWith("/")) {
-          data.avatar = "/" + data.avatar;
-        }
-
-        // Gabungkan dengan base URL API
-        data.avatar = API_URL + data.avatar;
+      // Ekstrak host API URL untuk memastikan URL yang bersih
+      const apiUrlParts = API_URL.split('/');
+      const baseUrl = apiUrlParts.slice(0, 3).join('/'); // http://host:port
+      
+      console.log("Base URL for avatar:", baseUrl);
+      
+      // Hapus semua paths kecuali file path (biasanya /media/uploads/...)
+      let avatarPath = data.avatar;
+      
+      // Jika URL absolut, gunakan path-nya saja
+      if (avatarPath.startsWith('http')) {
+        const avatarUrlObj = new URL(avatarPath);
+        avatarPath = avatarUrlObj.pathname;
+        console.log("Extracted path from absolute URL:", avatarPath);
       }
+      
+      // Hapus awalan '/api' jika ada
+      if (avatarPath.startsWith('/api/')) {
+        avatarPath = avatarPath.substring(4);
+        console.log("Removed /api prefix:", avatarPath);
+      }
+      
+      // Pastikan '/media' ada di path, itu adalah direktori media Django
+      if (!avatarPath.includes('/media/')) {
+        if (avatarPath.startsWith('/')) {
+          avatarPath = '/media' + avatarPath;
+        } else {
+          avatarPath = '/media/' + avatarPath;
+        }
+        console.log("Added /media prefix:", avatarPath);
+      }
+      
+      // Pastikan diawali dengan /
+      if (!avatarPath.startsWith('/')) {
+        avatarPath = '/' + avatarPath;
+      }
+      
+      // Buat URL final dengan baseUrl + path yang sudah dibersihkan
+      data.avatar = `${baseUrl}${avatarPath}`;
       console.log("Final avatar URL:", data.avatar);
     }
 
@@ -281,22 +346,45 @@ export const updateUserProfile = async (token, formData) => {
 
     // Pastikan URL avatar lengkap dengan path yang benar
     if (data.avatar) {
-      // Avatar URL dari backend biasanya berupa path relatif seperti '/media/uploads/avatars/wahyu.jpg'
-      // Backend mengirimkan URL relatif tanpa host, jadi kita perlu menambahkan API_URL
-      if (!data.avatar.startsWith("http")) {
-        // Hapus '/api' jika ada di awal path (karena API_URL sudah mengandung /api)
-        if (data.avatar.startsWith("/api/")) {
-          data.avatar = data.avatar.substring(4); // Hapus '/api' dari awal
-        }
-
-        // Pastikan URL dimulai dengan garis miring
-        if (!data.avatar.startsWith("/")) {
-          data.avatar = "/" + data.avatar;
-        }
-
-        // Gabungkan dengan base URL API
-        data.avatar = API_URL + data.avatar;
+      // Ekstrak host API URL untuk memastikan URL yang bersih
+      const apiUrlParts = API_URL.split('/');
+      const baseUrl = apiUrlParts.slice(0, 3).join('/'); // http://host:port
+      
+      console.log("Base URL for avatar:", baseUrl);
+      
+      // Hapus semua paths kecuali file path (biasanya /media/uploads/...)
+      let avatarPath = data.avatar;
+      
+      // Jika URL absolut, gunakan path-nya saja
+      if (avatarPath.startsWith('http')) {
+        const avatarUrlObj = new URL(avatarPath);
+        avatarPath = avatarUrlObj.pathname;
+        console.log("Extracted path from absolute URL:", avatarPath);
       }
+      
+      // Hapus awalan '/api' jika ada
+      if (avatarPath.startsWith('/api/')) {
+        avatarPath = avatarPath.substring(4);
+        console.log("Removed /api prefix:", avatarPath);
+      }
+      
+      // Pastikan '/media' ada di path, itu adalah direktori media Django
+      if (!avatarPath.includes('/media/')) {
+        if (avatarPath.startsWith('/')) {
+          avatarPath = '/media' + avatarPath;
+        } else {
+          avatarPath = '/media/' + avatarPath;
+        }
+        console.log("Added /media prefix:", avatarPath);
+      }
+      
+      // Pastikan diawali dengan /
+      if (!avatarPath.startsWith('/')) {
+        avatarPath = '/' + avatarPath;
+      }
+      
+      // Buat URL final dengan baseUrl + path yang sudah dibersihkan
+      data.avatar = `${baseUrl}${avatarPath}`;
       console.log("Final avatar URL:", data.avatar);
     }
 
@@ -441,33 +529,54 @@ export const getPurchasedProducts = async (userId) => {
 function processImageUrl(url) {
   if (!url) return null;
 
-  // If already a complete URL, return as is
-  if (url.startsWith("http")) {
-    return url;
-  }
+  console.log("Processing image URL:", url);
 
   try {
-    // Get the base URL (without /api)
-    const apiUrl = API_URL;
-    const baseUrl =
-      typeof window !== "undefined"
-        ? process.env.NEXT_PUBLIC_BROWSER_BASE_URL || apiUrl.replace("/api", "")
-        : process.env.NEXT_PUBLIC_BASE_URL || apiUrl.replace("/api", "");
-
-    // Clean the URL path
+    // Ekstrak API URL untuk mendapatkan base URL
+    const apiUrlParts = API_URL.split('/');
+    const baseUrl = apiUrlParts.slice(0, 3).join('/'); // http://host:port
+    
+    // Jika sudah URL lengkap, periksa dan perbaiki jika berisi /api/
+    if (url.startsWith("http")) {
+      // Jika URL berisi /api/ yang problematik, hapus
+      if (url.includes("/api/")) {
+        const fixedUrl = url.replace("/api/", "/");
+        console.log("Fixed image URL by removing /api/:", fixedUrl);
+        return fixedUrl;
+      }
+      console.log("Using existing complete URL:", url);
+      return url;
+    }
+    
+    // Jika path relatif, bersihkan dan format dengan benar
     let cleanUrl = url;
+    
+    // Hapus awalan /api/ jika ada
     if (cleanUrl.startsWith("/api/")) {
       cleanUrl = cleanUrl.substring(4);
+      console.log("Removed /api/ prefix from image URL:", cleanUrl);
     }
-
-    // Ensure it has the proper /media prefix if needed
-    if (!cleanUrl.startsWith("/media/") && !cleanUrl.startsWith("/")) {
-      cleanUrl = "/media/" + cleanUrl;
-    } else if (!cleanUrl.startsWith("/")) {
+    
+    // Pastikan ada /media/ di path
+    if (!cleanUrl.includes("/media/")) {
+      if (cleanUrl.startsWith("/")) {
+        cleanUrl = "/media" + cleanUrl;
+      } else {
+        cleanUrl = "/media/" + cleanUrl;
+      }
+      console.log("Added /media/ prefix to image URL:", cleanUrl);
+    }
+    
+    // Pastikan diawali dengan /
+    if (!cleanUrl.startsWith("/")) {
       cleanUrl = "/" + cleanUrl;
+      console.log("Added leading slash to image URL:", cleanUrl);
     }
-
-    return `${baseUrl}${cleanUrl}`;
+    
+    // Gabungkan dengan base URL
+    const finalUrl = `${baseUrl}${cleanUrl}`;
+    console.log("Final processed image URL:", finalUrl);
+    return finalUrl;
   } catch (error) {
     console.error("Error processing image URL:", error, url);
     return url; // Return original if processing fails

@@ -142,49 +142,47 @@ export default function ProductCard({
   };
 
   return (
-    <Link href={`/Product/${id}`} className="block">
-      <div className="border rounded p-2 hover:shadow-md relative min-h-[320px] flex flex-col justify-between">
-        {/* Badge */}
-        {badge && (
-          <span
-            className={`absolute top-2 left-2 text-white text-xs px-2 py-1 rounded ${badgeColor}`}
-          >
-            {badge}
-          </span>
-        )}
+    <div className="border rounded p-2 hover:shadow-md relative min-h-[320px] flex flex-col justify-between">
+      {/* Badge */}
+      {badge && (
+        <span
+          className={`absolute top-2 left-2 text-white text-xs px-2 py-1 rounded ${badgeColor}`}
+        >
+          {badge}
+        </span>
+      )}
 
-        {/* Gambar */}
-        <img
-          src={getValidImageUrl(image_url)}
-          alt={name}
-          className="w-full h-48 object-cover rounded-md"
-          onError={handleImageError}
-          onLoad={() => {
-            console.log(
-              "Image loaded successfully:",
-              getValidImageUrl(image_url)
-            );
-          }}
-        />
+      {/* Gambar */}
+      <img
+        src={getValidImageUrl(image_url)}
+        alt={name}
+        className="w-full h-48 object-cover rounded-md"
+        onError={handleImageError}
+        onLoad={() => {
+          console.log(
+            "Image loaded successfully:",
+            getValidImageUrl(image_url)
+          );
+        }}
+      />
 
-        {/* Info */}
-        <div className="mt-2 flex flex-col justify-between flex-grow">
-          {/* Judul fix tinggi biar rata */}
-          <h3 className="font-semibold text-sm h-10 leading-tight line-clamp-2">
-            {name}
-          </h3>
+      {/* Info */}
+      <div className="mt-2 flex flex-col justify-between flex-grow">
+        {/* Judul fix tinggi biar rata */}
+        <h3 className="font-semibold text-sm h-10 leading-tight line-clamp-2">
+          {name}
+        </h3>
 
-          {/* Rating */}
-          <div className="text-yellow-500 text-sm">
-            {"★".repeat(ratingNumber)}
-            {"☆".repeat(5 - ratingNumber)}
-            <span className="text-gray-500 text-xs ml-1">({ratingNumber})</span>
-          </div>
-
-          <p className="text-sm">{formatPrice(price)}</p>
-          <p className="text-xs text-gray-500">Terjual {total_sold}+</p>
+        {/* Rating */}
+        <div className="text-yellow-500 text-sm">
+          {"★".repeat(ratingNumber)}
+          {"☆".repeat(5 - ratingNumber)}
+          <span className="text-gray-500 text-xs ml-1">({ratingNumber})</span>
         </div>
+
+        <p className="text-sm">{formatPrice(price)}</p>
+        <p className="text-xs text-gray-500">Terjual {total_sold}+</p>
       </div>
-    </Link>
+    </div>
   );
 }

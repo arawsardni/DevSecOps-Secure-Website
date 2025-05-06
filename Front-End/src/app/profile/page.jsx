@@ -385,12 +385,6 @@ export default function ProfilePage() {
             Lihat Riwayat Pesanan
           </button>
           <button
-            onClick={() => router.push("/profile/PurchaseHistory")}
-            className="bg-[#8B4513] text-white px-4 py-2 rounded-lg hover:bg-[#5A2E0D] transition-colors mr-2"
-          >
-            Produk yang Pernah Dibeli
-          </button>
-          <button
             onClick={() => router.push("/profile/Reviews")}
             className="bg-[#8B4513] text-white px-4 py-2 rounded-lg hover:bg-[#5A2E0D] transition-colors"
           >
