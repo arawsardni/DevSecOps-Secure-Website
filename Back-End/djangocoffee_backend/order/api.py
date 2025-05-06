@@ -152,7 +152,20 @@ def process_payment(request, order_id):
         payment.transaction_id = f"TRX-{uuid.uuid4().hex[:8].upper()}"
         payment.save()
         
+        # Jika status disediakan dalam request, update status pesanan
+        if 'status' in request.data and request.data['status'] in dict(Order.STATUS_CHOICES):
+            order.status = request.data['status']
+            # Jika status adalah 'completed', panggil metode khusus
+            if order.status == 'completed':
+                order.mark_as_completed()
+            else:
+                order.save()
+        # Jika tidak, cukup pastikan status berubah menjadi 'processing' setelah pembayaran
+        else:
         # Order akan otomatis diupdate ke status 'paid' oleh save method di OrderPayment
+            # Tetapi kita perlu juga update status order menjadi 'processing' atau 'completed'
+            order.status = 'completed'  # Ubah status menjadi completed saat pembayaran berhasil
+            order.mark_as_completed()
         
         # Tambahkan tracking
         OrderTracking.objects.create(
@@ -555,4 +568,42 @@ def create_test_orders(request):
 
     except Exception as e:
         print(f"Error creating test orders: {str(e)}")
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_order_payment(request, order_id):
+    """
+    Mendapatkan detail pembayaran dari pesanan
+    """
+    try:
+        # Cek jika user yang login sama dengan pemilik pesanan
+        # atau user adalah admin
+        order = Order.objects.get(id=order_id)
+        if request.user != order.user and not request.user.is_staff:
+            return Response(
+                {'error': 'Anda tidak memiliki akses ke pesanan ini'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Ambil data pembayaran
+        try:
+            payment = OrderPayment.objects.get(order_id=order_id)
+            serializer = OrderPaymentSerializer(payment)
+            return Response(serializer.data)
+        except OrderPayment.DoesNotExist:
+            return Response(
+                {'error': 'Detail pembayaran tidak ditemukan'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+    except Order.DoesNotExist:
+        return Response(
+            {'error': 'Pesanan tidak ditemukan'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        ) 

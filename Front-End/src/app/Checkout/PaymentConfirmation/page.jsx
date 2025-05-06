@@ -671,10 +671,10 @@ function PaymentConfirmationContent() {
           </button>
           
           <button
-            onClick={() => router.push('/dashboard/orders')}
+            onClick={handleCancelOrder}
             className="w-full bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-50"
           >
-            Lihat Pesanan Saya
+            Batalkan Pesanan Saya
           </button>
         </div>
       </div>

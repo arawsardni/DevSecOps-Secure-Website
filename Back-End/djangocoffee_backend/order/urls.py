@@ -5,7 +5,7 @@ from .api import (
     process_payment, update_order_status, admin_order_list,
     admin_order_detail, revenue_report, top_products_report,
     get_order_by_number, user_completed_orders, user_purchased_products,
-    create_test_orders
+    create_test_orders, get_order_payment
 )
 
 app_name = 'order'
@@ -28,4 +28,5 @@ urlpatterns = [
     path('admin/<uuid:order_id>/status/', update_order_status, name='update_order_status'),
     path('admin/report/revenue/', revenue_report, name='revenue_report'),
     path('admin/report/top-products/', top_products_report, name='top_products_report'),
+    path('<uuid:order_id>/payment/', get_order_payment, name='get_order_payment'),
 ] 

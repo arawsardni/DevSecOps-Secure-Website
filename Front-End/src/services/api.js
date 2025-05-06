@@ -192,13 +192,13 @@ export const registerUser = async (userData) => {
 
 export const logoutUser = async (token) => {
   try {
-    const response = await fetch(`${API_URL}/auth/logout/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  const response = await fetch(`${API_URL}/auth/logout/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
     // Bila status ok tapi tidak ada konten (204 No Content), segera return sukses
     if (response.status === 204) {
@@ -206,7 +206,7 @@ export const logoutUser = async (token) => {
     }
 
     // Bila status tidak ok, coba parse error jika ada
-    if (!response.ok) {
+  if (!response.ok) {
       try {
         // Cek ukuran respons sebelum mencoba parse sebagai JSON
         const text = await response.text();
@@ -288,8 +288,8 @@ export const getUserProfile = async (token) => {
       if (avatarPath.startsWith('/api/')) {
         avatarPath = avatarPath.substring(4);
         console.log("Removed /api prefix:", avatarPath);
-      }
-      
+        }
+
       // Pastikan '/media' ada di path, itu adalah direktori media Django
       if (!avatarPath.includes('/media/')) {
         if (avatarPath.startsWith('/')) {
@@ -298,8 +298,8 @@ export const getUserProfile = async (token) => {
           avatarPath = '/media/' + avatarPath;
         }
         console.log("Added /media prefix:", avatarPath);
-      }
-      
+        }
+
       // Pastikan diawali dengan /
       if (!avatarPath.startsWith('/')) {
         avatarPath = '/' + avatarPath;
@@ -366,8 +366,8 @@ export const updateUserProfile = async (token, formData) => {
       if (avatarPath.startsWith('/api/')) {
         avatarPath = avatarPath.substring(4);
         console.log("Removed /api prefix:", avatarPath);
-      }
-      
+        }
+
       // Pastikan '/media' ada di path, itu adalah direktori media Django
       if (!avatarPath.includes('/media/')) {
         if (avatarPath.startsWith('/')) {
@@ -376,8 +376,8 @@ export const updateUserProfile = async (token, formData) => {
           avatarPath = '/media/' + avatarPath;
         }
         console.log("Added /media prefix:", avatarPath);
-      }
-      
+        }
+
       // Pastikan diawali dengan /
       if (!avatarPath.startsWith('/')) {
         avatarPath = '/' + avatarPath;
@@ -537,7 +537,7 @@ function processImageUrl(url) {
     const baseUrl = apiUrlParts.slice(0, 3).join('/'); // http://host:port
     
     // Jika sudah URL lengkap, periksa dan perbaiki jika berisi /api/
-    if (url.startsWith("http")) {
+  if (url.startsWith("http")) {
       // Jika URL berisi /api/ yang problematik, hapus
       if (url.includes("/api/")) {
         const fixedUrl = url.replace("/api/", "/");
@@ -545,9 +545,9 @@ function processImageUrl(url) {
         return fixedUrl;
       }
       console.log("Using existing complete URL:", url);
-      return url;
-    }
-    
+    return url;
+  }
+
     // Jika path relatif, bersihkan dan format dengan benar
     let cleanUrl = url;
     
@@ -556,13 +556,13 @@ function processImageUrl(url) {
       cleanUrl = cleanUrl.substring(4);
       console.log("Removed /api/ prefix from image URL:", cleanUrl);
     }
-    
+
     // Pastikan ada /media/ di path
     if (!cleanUrl.includes("/media/")) {
       if (cleanUrl.startsWith("/")) {
         cleanUrl = "/media" + cleanUrl;
       } else {
-        cleanUrl = "/media/" + cleanUrl;
+      cleanUrl = "/media/" + cleanUrl;
       }
       console.log("Added /media/ prefix to image URL:", cleanUrl);
     }
@@ -572,7 +572,7 @@ function processImageUrl(url) {
       cleanUrl = "/" + cleanUrl;
       console.log("Added leading slash to image URL:", cleanUrl);
     }
-    
+
     // Gabungkan dengan base URL
     const finalUrl = `${baseUrl}${cleanUrl}`;
     console.log("Final processed image URL:", finalUrl);

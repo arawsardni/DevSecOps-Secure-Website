@@ -197,9 +197,9 @@ export function MyNavbar() {
     const newUrl = validUrl.includes("?") 
       ? `${validUrl}&t=${timestamp}` 
       : `${validUrl}?t=${timestamp}`;
-    
+
     console.log("Final avatar URL with timestamp:", newUrl);
-    return newUrl;
+      return newUrl;
   };
 
   // Fungsi untuk mendapatkan URL avatar yang valid
@@ -364,7 +364,7 @@ export function MyNavbar() {
       
       // Tambahkan timeout kecil sebelum navigasi untuk memastikan state diperbarui
       setTimeout(() => {
-        router.push("/");
+      router.push("/");
       }, 100);
     }
   };

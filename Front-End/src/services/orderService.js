@@ -508,6 +508,28 @@ export const confirmPayment = async (orderNumber) => {
             "[DEBUG] Returning simulated response:",
             simulatedResponse
           );
+          
+          // Perbarui juga status di localStorage jika ada
+          try {
+            const userId = localStorage.getItem("user_id");
+            const ordersKey = userId ? `orders_${userId}` : "orders";
+            const savedOrders = localStorage.getItem(ordersKey);
+            
+            if (savedOrders) {
+              const orders = JSON.parse(savedOrders);
+              const updatedOrders = orders.map((o) => {
+                if (o.orderNumber === orderNumber || o.order_number === orderNumber) {
+                  return { ...o, status: "completed", payment_status: "paid" };
+                }
+                return o;
+              });
+              
+              localStorage.setItem(ordersKey, JSON.stringify(updatedOrders));
+            }
+          } catch (err) {
+            console.error("[DEBUG] Error updating localStorage orders:", err);
+          }
+          
           return simulatedResponse;
         }
 
@@ -529,6 +551,7 @@ export const confirmPayment = async (orderNumber) => {
       payment_status: "paid",
       payment_date: new Date().toISOString(),
       amount: 0, // The backend will use the order's amount
+      status: "completed"
     };
 
     console.log(
@@ -568,6 +591,12 @@ export const confirmPayment = async (orderNumber) => {
       // Parse the response text as JSON
       data = JSON.parse(responseText);
       console.log("[DEBUG] Payment confirmation response:", data);
+      
+      // Pastikan status disetel ke completed
+      if (data && data.status !== 'completed') {
+        console.log("[DEBUG] Updating order status to completed");
+        data.status = 'completed';
+      }
     } catch (jsonError) {
       console.error(
         "[DEBUG] Failed to parse payment response as JSON:",
@@ -579,6 +608,27 @@ export const confirmPayment = async (orderNumber) => {
     // Save the updated order back to session storage
     console.log("[DEBUG] Saving updated order to session storage");
     sessionStorage.setItem("order", JSON.stringify(data));
+    
+    // Update localStorage orders if present
+    try {
+      const userId = localStorage.getItem("user_id");
+      const ordersKey = userId ? `orders_${userId}` : "orders";
+      const savedOrders = localStorage.getItem(ordersKey);
+      
+      if (savedOrders) {
+        const orders = JSON.parse(savedOrders);
+        const updatedOrders = orders.map((o) => {
+          if (o.orderNumber === orderNumber || o.order_number === orderNumber) {
+            return { ...o, status: "completed", payment_status: "paid" };
+          }
+          return o;
+        });
+        
+        localStorage.setItem(ordersKey, JSON.stringify(updatedOrders));
+      }
+    } catch (err) {
+      console.error("[DEBUG] Error updating localStorage orders:", err);
+    }
 
     return data;
   } catch (error) {
@@ -768,5 +818,63 @@ export const getUserPurchaseHistory = async (token, userId) => {
   } catch (error) {
     console.error("Error in getUserPurchaseHistory:", error);
     throw error;
+  }
+};
+
+/**
+ * Mendapatkan detail pembayaran pesanan berdasarkan ID
+ * @param {string} token - Token autentikasi
+ * @param {string} orderId - ID pesanan
+ * @returns {Promise<object>} - Detail pembayaran
+ */
+export const getOrderPaymentDetail = async (token, orderId) => {
+  try {
+    // Gunakan API_URL yang sudah didefinisikan agar konsisten dengan fungsi lainnya
+    const apiUrl = `${API_URL}/orders/${orderId}/payment/`;
+    console.log(`Fetching payment detail from: ${apiUrl}`);
+    
+    // Tambahkan timeout untuk mencegah fetch yang terlalu lama
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 detik timeout
+    
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId); // Bersihkan timeout jika fetch berhasil
+      
+      // Jika backend mengembalikan 404, mungkin endpoint belum diimplementasikan
+      if (response.status === 404) {
+        console.log(`Payment detail endpoint not found (404) for order ID: ${orderId}`);
+        return null;
+      }
+      
+      if (!response.ok) {
+        console.error(`Failed to fetch payment detail: ${response.status}`);
+        return null;
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      // Jika error karena timeout atau network
+      if (fetchError.name === 'AbortError') {
+        console.log('Request timeout for payment detail fetch');
+      } else {
+        console.error('Fetch error for payment detail:', fetchError);
+      }
+      return null;
+    }
+  } catch (error) {
+    console.error('Error in getOrderPaymentDetail:', error);
+    // Return null instead of throwing error to prevent UI disruption
+    return null;
   }
 };

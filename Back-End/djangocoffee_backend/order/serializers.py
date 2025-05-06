@@ -81,6 +81,8 @@ class OrderListSerializer(serializers.ModelSerializer):
     payment_status_display = serializers.CharField(source='get_payment_status_display', read_only=True)
     delivery_method_display = serializers.CharField(source='get_delivery_method_display', read_only=True)
     total_items = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
+    payment_method_display = serializers.SerializerMethodField()
     
     class Meta:
         model = Order
@@ -88,11 +90,29 @@ class OrderListSerializer(serializers.ModelSerializer):
             'id', 'order_number', 'status', 'status_display', 
             'payment_status', 'payment_status_display',
             'delivery_method', 'delivery_method_display',
-            'total_amount', 'created_at', 'total_items'
+            'total_amount', 'created_at', 'total_items',
+            'payment_method', 'payment_method_display'
         )
     
     def get_total_items(self, obj):
         return obj.get_total_items_count()
+        
+    def get_payment_method(self, obj):
+        try:
+            if hasattr(obj, 'payment') and obj.payment:
+                return obj.payment.payment_method
+            return None
+        except Exception as e:
+            return None
+            
+    def get_payment_method_display(self, obj):
+        try:
+            if hasattr(obj, 'payment') and obj.payment:
+                payment_methods = dict(OrderPayment.PAYMENT_METHOD_CHOICES)
+                return payment_methods.get(obj.payment.payment_method, None)
+            return None
+        except Exception as e:
+            return None
 
 class CreateOrderItemSerializer(serializers.ModelSerializer):
     class Meta:

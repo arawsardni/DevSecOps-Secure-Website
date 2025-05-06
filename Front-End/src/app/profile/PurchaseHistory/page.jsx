@@ -16,7 +16,7 @@ export default function PurchaseHistoryPage() {
 
   useEffect(() => {
     if (!isClient) return;
-    
+
     // Redirect ke halaman profil karena fitur ini sudah tidak digunakan
     router.push("/profile");
   }, [router, isClient]);
@@ -25,7 +25,7 @@ export default function PurchaseHistoryPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="text-center">
         <p>Mengalihkan ke halaman profil...</p>
-      </div>
+        </div>
     </div>
   );
 }

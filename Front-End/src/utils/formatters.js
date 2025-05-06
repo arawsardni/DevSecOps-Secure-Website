@@ -12,9 +12,13 @@ export function formatRupiah(amount, withSymbol = true) {
 
   // Pastikan amount adalah number
   if (typeof amount === "string") {
-    // Hapus semua karakter non-digit
-    amount = amount.replace(/\D/g, "");
-    amount = parseInt(amount);
+    // Jika input berisi koma sebagai desimal, konversi ke titik terlebih dahulu
+    if (amount.includes(",")) {
+      amount = amount.replace(",", ".");
+    }
+    // Hapus semua karakter non-digit kecuali titik desimal
+    amount = amount.replace(/[^\d.]/g, "");
+    amount = parseFloat(amount);
   }
 
   if (isNaN(amount)) {
@@ -25,7 +29,7 @@ export function formatRupiah(amount, withSymbol = true) {
   // Example: If delivery_fee is added twice or miscalculated
   if (amount === 4000010000) {
     console.error("Detected known calculation error (4000010000), fixing to proper value");
-    amount = 50000; // Use a reasonable default based on typical order
+    amount = 4000000; // Perbaikan ke nilai yang lebih masuk akal
   }
   
   // Fix for 1000000 (should be 10000) delivery fee
@@ -38,6 +42,19 @@ export function formatRupiah(amount, withSymbol = true) {
   if (amount === 7000010000) {
     console.error("Detected known total amount error (7000010000), fixing to proper value");
     amount = 80000; // Reasonable value for 2 coffees + delivery
+  }
+  
+  // Check if amount uses comma decimal format (e.g., 40000,00)
+  if (amount > 1000 && amount % 1 !== 0) {
+    // Hitung jumlah digit desimal
+    const decimalDigits = amount.toString().split('.')[1]?.length || 0;
+    
+    // Jika ada 2 angka di belakang koma (contoh: 40000.00)
+    if (decimalDigits === 2) {
+      // Kemungkinan ini adalah format harga dengan desimal, abaikan desimalnya
+      amount = Math.round(amount);
+      console.log(`Converted decimal amount ${amount.toFixed(2)} to ${amount}`);
+    }
   }
   
   // Check if amount is abnormally large (likely an error)
