@@ -33,11 +33,30 @@ class Cart(models.Model):
         self.save()
 
 class CartItem(models.Model):
+    SUGAR_CHOICES = [
+        ('normal', 'Normal'),
+        ('less', 'Less Sugar'),
+        ('no', 'No Sugar'),
+    ]
+    
+    ICE_CHOICES = [
+        ('normal', 'Normal'),
+        ('less', 'Less Ice'),
+        ('no', 'No Ice'),
+        ('hot', 'Hot'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
     size = models.CharField(max_length=2, choices=Product.SIZE_CHOICES, null=True, blank=True)
+    
+    # Field tambahan untuk menyimpan data dari localStorage
+    sugar = models.CharField(max_length=20, choices=SUGAR_CHOICES, default='normal', null=True, blank=True)
+    ice = models.CharField(max_length=20, choices=ICE_CHOICES, default='normal', null=True, blank=True)
+    shots = models.PositiveIntegerField(default=0, null=True, blank=True)
+    
     special_instructions = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -50,6 +69,8 @@ class CartItem(models.Model):
     
     def get_total_price(self):
         """Menghitung total harga untuk item ini (harga × kuantitas)"""
+        if self.product is None or self.product.price is None or self.quantity is None:
+            return 0
         return self.product.price * self.quantity
     
     def update_quantity(self, quantity):

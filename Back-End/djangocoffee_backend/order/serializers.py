@@ -81,6 +81,8 @@ class OrderListSerializer(serializers.ModelSerializer):
     payment_status_display = serializers.CharField(source='get_payment_status_display', read_only=True)
     delivery_method_display = serializers.CharField(source='get_delivery_method_display', read_only=True)
     total_items = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
+    payment_method_display = serializers.SerializerMethodField()
     
     class Meta:
         model = Order
@@ -88,11 +90,29 @@ class OrderListSerializer(serializers.ModelSerializer):
             'id', 'order_number', 'status', 'status_display', 
             'payment_status', 'payment_status_display',
             'delivery_method', 'delivery_method_display',
-            'total_amount', 'created_at', 'total_items'
+            'total_amount', 'created_at', 'total_items',
+            'payment_method', 'payment_method_display'
         )
     
     def get_total_items(self, obj):
         return obj.get_total_items_count()
+        
+    def get_payment_method(self, obj):
+        try:
+            if hasattr(obj, 'payment') and obj.payment:
+                return obj.payment.payment_method
+            return None
+        except Exception as e:
+            return None
+            
+    def get_payment_method_display(self, obj):
+        try:
+            if hasattr(obj, 'payment') and obj.payment:
+                payment_methods = dict(OrderPayment.PAYMENT_METHOD_CHOICES)
+                return payment_methods.get(obj.payment.payment_method, None)
+            return None
+        except Exception as e:
+            return None
 
 class CreateOrderItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -137,7 +157,7 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         total_amount = 0
         for item_data in items_data:
             product = item_data['product']
-            quantity = item_data['quantity']
+            quantity = int(item_data['quantity'])  # Ensure quantity is an integer
             
             # Validasi stok
             if product.stock < quantity:
@@ -145,7 +165,7 @@ class CreateOrderSerializer(serializers.ModelSerializer):
                     f"Stok tidak cukup untuk {product.name}. Tersedia: {product.stock}"
                 )
             
-            # Tambahkan ke total
+            # Tambahkan ke total - ensure both are correct types
             total_amount += product.price * quantity
         
         # Tambahkan biaya pengiriman jika delivery
@@ -155,7 +175,7 @@ class CreateOrderSerializer(serializers.ModelSerializer):
             total_amount += delivery_fee
         
         # Hitung diskon dari poin
-        points_used = validated_data.get('points_used', 0)
+        points_used = validated_data.pop('points_used', 0)  # Pop to avoid duplicate
         discount_amount = points_used // 10  # 10 poin = 1000 rupiah
         total_amount -= discount_amount
         
@@ -163,7 +183,8 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         total_amount = max(total_amount, 0)
         
         # Hitung poin yang didapat (1% dari total belanja)
-        points_earned = int(total_amount * 0.01)
+        # Convert to integer first to avoid Decimal * float issue
+        points_earned = int(float(total_amount) * 0.01)
         
         # Buat order
         order = Order.objects.create(
@@ -179,14 +200,16 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         # Buat order items dan kurangi stok
         for item_data in items_data:
             product = item_data['product']
-            quantity = item_data['quantity']
+            quantity = int(item_data['quantity'])  # Ensure quantity is an integer
             
             # Buat order item
             OrderItem.objects.create(
                 order=order,
                 product=product,
                 price=product.price,
-                **item_data
+                quantity=quantity,  # Use the converted integer quantity
+                size=item_data.get('size'),
+                special_instructions=item_data.get('special_instructions', '')
             )
             
             # Kurangi stok

@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Q
 from django.shortcuts import get_object_or_404
 
 from .models import Review, ReviewLike, ReviewImage
@@ -54,11 +54,11 @@ def product_reviews(request, product_id):
     stats = Review.objects.filter(product=product, is_approved=True).aggregate(
         avg_rating=Avg('rating'),
         total_reviews=Count('id'),
-        five_star=Count('id', filter={'rating': 5}),
-        four_star=Count('id', filter={'rating': 4}),
-        three_star=Count('id', filter={'rating': 3}),
-        two_star=Count('id', filter={'rating': 2}),
-        one_star=Count('id', filter={'rating': 1})
+        five_star=Count('id', filter=Q(rating=5)),
+        four_star=Count('id', filter=Q(rating=4)),
+        three_star=Count('id', filter=Q(rating=3)),
+        two_star=Count('id', filter=Q(rating=2)),
+        one_star=Count('id', filter=Q(rating=1))
     )
     
     return Response({

@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./Back-End/djangocoffee_backend
+    container_name: django_backend
+    command: >
+      bash -c "
+        python manage.py makemigrations --merge --no-input &&
+        python manage.py migrate --run-syncdb &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    volumes:
+      - ./Back-End/djangocoffee_backend/:/usr/src/djangocoffee_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./Back-End/.env.dev
+    environment:
+      - DJANGO_ALLOWED_HOSTS=localhost localhost:8000 127.0.0.1 [::1] backend frontend 10.34.100.143 10.34.100.143:8000 10.34.100.143:3000 modsec-nginx
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  frontend:
+    build: ./Front-End
+    container_name: nextjs_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./Front-End:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000/api
+      - NEXT_PUBLIC_BROWSER_API_URL=http://10.34.100.143/api
+      - NODE_ENV=production
+    networks:
+      - app-network
+
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      - ./initdb:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_USER=postgresuser
+      - POSTGRES_PASSWORD=postgrespassword
+      - POSTGRES_DB=djangocoffee
+    networks:
+      - app-network
+
+  modsec-nginx:
+    image: elisiano/nginx-modsecurity
+    container_name: modsec_nginx
+    volumes:
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/main.conf:/etc/nginx/modsec/main.conf
+      - ./Back-End/djangocoffee_backend/media:/home/app/media
+      - ./Back-End/djangocoffee_backend/staticfiles:/home/app/staticfiles
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - PARANOIA=1
+      - PROXY_TIMEOUT=300
+      - ANOMALY_INBOUND=5
+      - ANOMALY_OUTBOUND=4
+      - ALLOWED_METHODS=GET POST PUT DELETE OPTIONS HEAD
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume: 

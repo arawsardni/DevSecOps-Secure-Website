@@ -36,6 +36,7 @@ class Order(models.Model):
     
     # Informasi pengiriman (jika delivery)
     delivery_address = models.ForeignKey(Address, on_delete=models.SET_NULL, related_name='orders', null=True, blank=True)
+    delivery_address_text = models.TextField(blank=True, null=True, help_text="Alamat pengiriman dalam bentuk teks")
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_notes = models.TextField(blank=True, null=True)
     
@@ -73,6 +74,10 @@ class Order(models.Model):
             else:
                 # Jika tidak ada order sebelumnya, mulai dari 0000001
                 self.order_number = "ORD0000001"
+                
+        # Simpan alamat pengiriman sebagai teks juga
+        if self.delivery_address and not self.delivery_address_text:
+            self.delivery_address_text = self.delivery_address.address
                 
         super().save(*args, **kwargs)
     
@@ -133,6 +138,8 @@ class OrderItem(models.Model):
         return f"{self.quantity} x {self.product.name} - {self.get_size_display() or 'Default Size'}"
     
     def get_total_price(self):
+        if self.price is None or self.quantity is None:
+            return 0
         return self.price * self.quantity
 
 class OrderPayment(models.Model):

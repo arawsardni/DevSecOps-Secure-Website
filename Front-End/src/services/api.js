@@ -1,0 +1,1032 @@
+// Menggunakan URL yang berbeda berdasarkan environment
+// - Di browser pengguna: http://10.34.100.143:8000/api
+// - Di dalam container: http://backend:8000/api
+export const API_URL =
+  typeof window !== "undefined"
+    ? process.env.NEXT_PUBLIC_BROWSER_API_URL || "http://10.34.100.143:8000/api"
+    : process.env.NEXT_PUBLIC_API_URL || "http://backend:8000/api";
+
+export const getProducts = async (params = {}) => {
+  const queryParams = new URLSearchParams(params);
+  const response = await fetch(`${API_URL}/products/?${queryParams}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch products");
+  }
+  return response.json();
+};
+
+export const getProductById = async (id) => {
+  try {
+    if (!id) {
+      throw new Error("Product ID tidak valid");
+    }
+
+    // Coba untuk mengonversi ID jika itu adalah objek atau format yang berbeda
+    let productId = id;
+    if (typeof id === "object" && id !== null) {
+      // Jika id adalah objek, coba ambil id atau product_id
+      productId = id.id || id.product_id;
+    }
+
+    // Pastikan ID valid
+    if (!productId) {
+      throw new Error("Product ID tidak valid");
+    }
+
+    console.log("Fetching product with ID:", productId);
+
+    // Cek dulu di cache sebelum mencoba API
+    try {
+      const allProductsStr = localStorage.getItem("products_cache");
+      if (allProductsStr) {
+        const allProducts = JSON.parse(allProductsStr);
+        const cachedProduct = allProducts.find(
+          (p) =>
+            String(p.id) === String(productId) ||
+            String(p.product_id) === String(productId)
+        );
+        if (cachedProduct) {
+          console.log("Product found in cache:", cachedProduct);
+          return cachedProduct;
+        }
+      }
+    } catch (cacheError) {
+      console.warn("Error checking product cache:", cacheError);
+      // Lanjut ke API jika cache error
+    }
+
+    // Jika tidak ada di cache, coba ambil dari API
+    try {
+      const response = await fetch(`${API_URL}/products/${productId}/`);
+      if (!response.ok) {
+        throw new Error("Product not found in API");
+      }
+
+      const data = await response.json();
+
+      // Kembalikan data dari API jika valid
+      if (data && data.name) {
+        return data;
+      }
+      throw new Error("Invalid product data from API");
+    } catch (apiError) {
+      console.warn("API fetch error:", apiError);
+
+      // Jika API gagal, coba sekali lagi dari cache
+      const allProductsStr = localStorage.getItem("products_cache");
+      if (allProductsStr) {
+        const allProducts = JSON.parse(allProductsStr);
+        const cachedProduct = allProducts.find(
+          (p) =>
+            String(p.id) === String(productId) ||
+            String(p.product_id) === String(productId)
+        );
+        if (cachedProduct) {
+          console.log(
+            "Product found in cache after API failure:",
+            cachedProduct
+          );
+          return cachedProduct;
+        }
+      }
+
+      // Jika masih tidak ditemukan, lempar error
+      throw new Error("Failed to fetch product");
+    }
+  } catch (error) {
+    console.error(`Error fetching product with ID ${id}:`, error);
+    throw new Error("Failed to fetch product");
+  }
+};
+
+export const getCategories = async () => {
+  const response = await fetch(`${API_URL}/products/categories/`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch categories");
+  }
+  return response.json();
+};
+
+// Auth API
+export const loginUser = async (credentials) => {
+  try {
+    // Extract email and password correctly to avoid nested objects
+    const { email, password } = credentials;
+
+    // Ensure we're sending a properly formatted object
+    const loginData = { email, password };
+
+    console.log("Logging in user:", email);
+    console.log("Login payload:", JSON.stringify(loginData));
+
+    const response = await fetch(`${API_URL}/auth/login/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(loginData),
+    });
+
+    // Get the raw text first for better debugging
+    const responseText = await response.text();
+    console.log("Raw response:", responseText);
+
+    // Try to parse as JSON
+    let data;
+    let ok = response.ok;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Error parsing response:", error);
+      throw new Error("Server returned invalid response");
+    }
+
+    if (!ok) {
+      // Extract error message from response
+      let errorMessage = "Login failed";
+
+      if (data) {
+        // Check all possible error field names
+        if (data.detail) {
+          errorMessage =
+            typeof data.detail === "object"
+              ? JSON.stringify(data.detail)
+              : data.detail;
+        } else if (data.error) {
+          errorMessage = data.error;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.non_field_errors) {
+          errorMessage = data.non_field_errors[0];
+        }
+      }
+
+      console.error("Login error details:", data);
+      throw new Error(errorMessage);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Login error:", error);
+    throw error;
+  }
+};
+
+export const registerUser = async (userData) => {
+  const response = await fetch(`${API_URL}/auth/register/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Registration failed");
+  }
+
+  return response.json();
+};
+
+export const logoutUser = async (token) => {
+  try {
+  const response = await fetch(`${API_URL}/auth/logout/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+    // Bila status ok tapi tidak ada konten (204 No Content), segera return sukses
+    if (response.status === 204) {
+      return { success: true };
+    }
+
+    // Bila status tidak ok, coba parse error jika ada
+  if (!response.ok) {
+      try {
+        // Cek ukuran respons sebelum mencoba parse sebagai JSON
+        const text = await response.text();
+        
+        // Jika respons kosong, kembalikan sukses meskipun status error
+        if (!text || text.trim() === '') {
+          console.log("Empty response from logout API with status:", response.status);
+          return { success: true };
+        }
+        
+        // Coba parse respons jika tidak kosong
+        const error = JSON.parse(text);
+        throw new Error(error.error || error.detail || "Logout failed");
+      } catch (e) {
+        // Respons bukan JSON valid, tapi tetap lanjutkan proses logout
+        console.log("Non-JSON response from logout API:", e);
+        return { success: true };
+      }
+    }
+
+    // Cek apakah respons memiliki konten
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      try {
+        const data = await response.json();
+        return data;
+      } catch (e) {
+        // Respons bukan JSON valid tapi status OK
+        console.log("Invalid JSON in logout response:", e);
+        return { success: true };
+      }
+    }
+    
+    // Default: kembalikan sukses
+    return { success: true };
+  } catch (error) {
+    console.log("Logout error:", error);
+    // Tetap kembalikan sukses agar frontend tetap bisa logout lokal
+    return { success: true };
+  }
+};
+
+// Profile API
+export const getUserProfile = async (token) => {
+  try {
+    const response = await fetch(`${API_URL}/auth/profile/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to fetch profile");
+    }
+
+    const data = await response.json();
+    console.log("User profile response:", data);
+
+    // Pastikan URL avatar lengkap dengan path yang benar
+    if (data.avatar) {
+      // Ekstrak host API URL untuk memastikan URL yang bersih
+      const apiUrlParts = API_URL.split('/');
+      const baseUrl = apiUrlParts.slice(0, 3).join('/'); // http://host:port
+      
+      console.log("Base URL for avatar:", baseUrl);
+      
+      // Hapus semua paths kecuali file path (biasanya /media/uploads/...)
+      let avatarPath = data.avatar;
+      
+      // Jika URL absolut, gunakan path-nya saja
+      if (avatarPath.startsWith('http')) {
+        const avatarUrlObj = new URL(avatarPath);
+        avatarPath = avatarUrlObj.pathname;
+        console.log("Extracted path from absolute URL:", avatarPath);
+      }
+      
+      // Hapus awalan '/api' jika ada
+      if (avatarPath.startsWith('/api/')) {
+        avatarPath = avatarPath.substring(4);
+        console.log("Removed /api prefix:", avatarPath);
+        }
+
+      // Pastikan '/media' ada di path, itu adalah direktori media Django
+      if (!avatarPath.includes('/media/')) {
+        if (avatarPath.startsWith('/')) {
+          avatarPath = '/media' + avatarPath;
+        } else {
+          avatarPath = '/media/' + avatarPath;
+        }
+        console.log("Added /media prefix:", avatarPath);
+        }
+
+      // Pastikan diawali dengan /
+      if (!avatarPath.startsWith('/')) {
+        avatarPath = '/' + avatarPath;
+      }
+      
+      // Buat URL final dengan baseUrl + path yang sudah dibersihkan
+      data.avatar = `${baseUrl}${avatarPath}`;
+      console.log("Final avatar URL:", data.avatar);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
+};
+
+export const updateUserProfile = async (token, formData) => {
+  try {
+    // Debug isi FormData
+    console.log("FormData entries:");
+    for (let pair of formData.entries()) {
+      console.log(
+        pair[0] + ": " + (pair[0] === "avatar" ? "File object" : pair[1])
+      );
+    }
+
+    const response = await fetch(`${API_URL}/auth/profile/update/`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Gagal memperbarui profil");
+    }
+
+    // Debug hasil respons
+    const data = await response.json();
+    console.log("Update profile response:", data);
+
+    // Pastikan URL avatar lengkap dengan path yang benar
+    if (data.avatar) {
+      // Ekstrak host API URL untuk memastikan URL yang bersih
+      const apiUrlParts = API_URL.split('/');
+      const baseUrl = apiUrlParts.slice(0, 3).join('/'); // http://host:port
+      
+      console.log("Base URL for avatar:", baseUrl);
+      
+      // Hapus semua paths kecuali file path (biasanya /media/uploads/...)
+      let avatarPath = data.avatar;
+      
+      // Jika URL absolut, gunakan path-nya saja
+      if (avatarPath.startsWith('http')) {
+        const avatarUrlObj = new URL(avatarPath);
+        avatarPath = avatarUrlObj.pathname;
+        console.log("Extracted path from absolute URL:", avatarPath);
+      }
+      
+      // Hapus awalan '/api' jika ada
+      if (avatarPath.startsWith('/api/')) {
+        avatarPath = avatarPath.substring(4);
+        console.log("Removed /api prefix:", avatarPath);
+        }
+
+      // Pastikan '/media' ada di path, itu adalah direktori media Django
+      if (!avatarPath.includes('/media/')) {
+        if (avatarPath.startsWith('/')) {
+          avatarPath = '/media' + avatarPath;
+        } else {
+          avatarPath = '/media/' + avatarPath;
+        }
+        console.log("Added /media prefix:", avatarPath);
+        }
+
+      // Pastikan diawali dengan /
+      if (!avatarPath.startsWith('/')) {
+        avatarPath = '/' + avatarPath;
+      }
+      
+      // Buat URL final dengan baseUrl + path yang sudah dibersihkan
+      data.avatar = `${baseUrl}${avatarPath}`;
+      console.log("Final avatar URL:", data.avatar);
+    }
+
+    // Pastikan data alamat diproses dengan benar
+    if (data.addresses) {
+      try {
+        // Jika addresses adalah string JSON, parse menjadi array
+        if (typeof data.addresses === "string") {
+          data.addresses = JSON.parse(data.addresses);
+        }
+        console.log("Processed addresses:", data.addresses);
+      } catch (error) {
+        console.error("Error processing addresses:", error);
+        data.addresses = [];
+      }
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    throw error;
+  }
+};
+
+export const updateUserAddresses = async (token, addressData) => {
+  const response = await fetch(`${API_URL}/auth/profile/addresses/update/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(addressData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to update addresses");
+  }
+
+  return response.json();
+};
+
+// Review API
+export const getPurchasedProducts = async (userId) => {
+  try {
+    // Validasi userId
+    if (!userId) {
+      console.warn("User ID tidak valid");
+      return [];
+    }
+
+    // Coba ambil token dari beberapa lokasi yang mungkin
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("access_token") ||
+      localStorage.getItem("auth_token");
+
+    if (!token) {
+      console.warn("Token tidak ditemukan di localStorage");
+      return [];
+    }
+
+    console.log("Fetching purchased products for user:", userId);
+
+    // Gunakan endpoint baru untuk produk yang pernah dibeli
+    const apiUrl = `${API_URL}/orders/user/${userId}/purchased-products/`;
+    console.log("API URL:", apiUrl);
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Log response status dan headers
+    console.log("Response status:", response.status);
+
+    if (!response.ok) {
+      // Coba baca response sebagai text untuk melihat apa yang sebenarnya dikembalikan
+      const responseText = await response.text();
+      console.error("Error response text:", responseText);
+
+      // Jika API gagal, fallback ke metode lama
+      console.log(
+        "API gagal, mencoba metode alternatif untuk mendapatkan produk..."
+      );
+      const oldApiUrl = `${API_URL}/orders/user/${userId}/completed/`;
+
+      try {
+        const oldResponse = await fetch(oldApiUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!oldResponse.ok) {
+          throw new Error(`Error dengan status: ${oldResponse.status}`);
+        }
+
+        const orders = await oldResponse.json();
+        return processCompletedOrdersForProducts(orders);
+      } catch (oldApiError) {
+        console.error("Error dengan API alternatif:", oldApiError);
+        // Fallback ke localStorage jika kedua API gagal
+        return getLocalPurchasedProducts(userId);
+      }
+    }
+
+    const products = await response.json();
+    console.log("Purchased products from API:", products);
+
+    // Process image URLs in the products
+    const processedProducts = products.map((product) => {
+      // Create a copy of the product to avoid modifying the original
+      const processedProduct = { ...product };
+
+      // Process image URLs
+      if (processedProduct.image) {
+        processedProduct.image = processImageUrl(processedProduct.image);
+      }
+
+      if (processedProduct.image_url) {
+        processedProduct.image_url = processImageUrl(
+          processedProduct.image_url
+        );
+      }
+
+      return processedProduct;
+    });
+
+    return processedProducts;
+  } catch (error) {
+    console.error("Error fetching purchased products:", error);
+    // Fallback ke localStorage jika API gagal
+    return getLocalPurchasedProducts(userId);
+  }
+};
+
+// Helper function to process image URLs
+function processImageUrl(url) {
+  if (!url) return null;
+
+  console.log("Processing image URL:", url);
+
+  try {
+    // Ekstrak API URL untuk mendapatkan base URL
+    const apiUrlParts = API_URL.split('/');
+    const baseUrl = apiUrlParts.slice(0, 3).join('/'); // http://host:port
+    
+    // Jika sudah URL lengkap, periksa dan perbaiki jika berisi /api/
+  if (url.startsWith("http")) {
+      // Jika URL berisi /api/ yang problematik, hapus
+      if (url.includes("/api/")) {
+        const fixedUrl = url.replace("/api/", "/");
+        console.log("Fixed image URL by removing /api/:", fixedUrl);
+        return fixedUrl;
+      }
+      console.log("Using existing complete URL:", url);
+    return url;
+  }
+
+    // Jika path relatif, bersihkan dan format dengan benar
+    let cleanUrl = url;
+    
+    // Hapus awalan /api/ jika ada
+    if (cleanUrl.startsWith("/api/")) {
+      cleanUrl = cleanUrl.substring(4);
+      console.log("Removed /api/ prefix from image URL:", cleanUrl);
+    }
+
+    // Pastikan ada /media/ di path
+    if (!cleanUrl.includes("/media/")) {
+      if (cleanUrl.startsWith("/")) {
+        cleanUrl = "/media" + cleanUrl;
+      } else {
+      cleanUrl = "/media/" + cleanUrl;
+      }
+      console.log("Added /media/ prefix to image URL:", cleanUrl);
+    }
+    
+    // Pastikan diawali dengan /
+    if (!cleanUrl.startsWith("/")) {
+      cleanUrl = "/" + cleanUrl;
+      console.log("Added leading slash to image URL:", cleanUrl);
+    }
+
+    // Gabungkan dengan base URL
+    const finalUrl = `${baseUrl}${cleanUrl}`;
+    console.log("Final processed image URL:", finalUrl);
+    return finalUrl;
+  } catch (error) {
+    console.error("Error processing image URL:", error, url);
+    return url; // Return original if processing fails
+  }
+}
+
+// Fungsi helper untuk mengambil produk dari localStorage
+const getLocalPurchasedProducts = (userId) => {
+  try {
+    console.log(
+      "Fetching purchased products from localStorage for user:",
+      userId
+    );
+
+    // Mendapatkan riwayat pesanan dari localStorage berdasarkan user_id
+    const ordersKey = `orders_${userId}`;
+    const ordersData = localStorage.getItem(ordersKey);
+
+    if (!ordersData) {
+      return [];
+    }
+
+    const orders = JSON.parse(ordersData);
+
+    // Filter hanya pesanan yang sudah selesai (completed)
+    const completedOrders = orders.filter(
+      (order) => order.status === "completed"
+    );
+
+    // Ekstrak semua produk yang telah dibeli
+    const purchasedProducts = [];
+    completedOrders.forEach((order) => {
+      order.items.forEach((item) => {
+        // Tambahkan ke daftar jika belum ada
+        if (
+          !purchasedProducts.some(
+            (p) => p.id === item.id || p.product_id === item.product_id
+          )
+        ) {
+          purchasedProducts.push(item);
+        }
+      });
+    });
+
+    console.log(
+      "Processed purchased products from localStorage:",
+      purchasedProducts
+    );
+    return purchasedProducts;
+  } catch (error) {
+    console.error(
+      "Error fetching purchased products from localStorage:",
+      error
+    );
+    return [];
+  }
+};
+
+// Product Reviews API
+export const getProductReviews = async (productId) => {
+  try {
+    // Ensure productId is valid
+    if (!productId) {
+      console.warn("Invalid product ID for reviews");
+      return [];
+    }
+
+    console.log("Fetching reviews for product ID:", productId);
+
+    // Connect to backend API
+    const response = await fetch(`${API_URL}/reviews/products/${productId}/`);
+
+    if (!response.ok) {
+      console.error("Failed to fetch reviews:", response.status);
+      // Fallback to localStorage if API fails
+      return getProductReviewsFromLocalStorage(productId);
+    }
+
+    const responseData = await response.json();
+
+    // Format the backend response to match our frontend format
+    const reviews = responseData.reviews.map((review) => ({
+      id: review.id,
+      productId: review.product,
+      userId: review.user,
+      user: review.user_detail?.name || "Anonymous",
+      rating: review.rating,
+      comment: review.comment,
+      createdAt: review.created_at,
+      updatedAt: review.updated_at,
+      avatar: review.user_detail?.avatar || null,
+      isApproved: review.is_approved,
+      isFeatured: review.is_featured,
+      likesCount: review.likes_count,
+    }));
+
+    console.log(`Found ${reviews.length} reviews for product ${productId}`);
+
+    // Also save to localStorage for offline access
+    try {
+      const allReviews = JSON.parse(
+        localStorage.getItem("product_reviews") || "[]"
+      );
+
+      // Remove any existing reviews for this product
+      const filteredReviews = allReviews.filter(
+        (review) => String(review.productId) !== String(productId)
+      );
+
+      // Add the new reviews
+      const updatedReviews = [...filteredReviews, ...reviews];
+      localStorage.setItem("product_reviews", JSON.stringify(updatedReviews));
+    } catch (err) {
+      console.error("Error saving reviews to localStorage:", err);
+    }
+
+    return reviews;
+  } catch (error) {
+    console.error("Error fetching product reviews:", error);
+    // Fallback to localStorage
+    return getProductReviewsFromLocalStorage(productId);
+  }
+};
+
+// Helper function to get reviews from localStorage (fallback)
+const getProductReviewsFromLocalStorage = (productId) => {
+  try {
+    // Get from localStorage
+    const reviewsData = localStorage.getItem("product_reviews");
+    let reviews = reviewsData ? JSON.parse(reviewsData) : [];
+
+    // Convert productId to string for consistent comparison
+    const targetId = String(productId);
+    console.log("Fetching reviews from localStorage for product ID:", targetId);
+
+    // Filter review based on productId
+    return reviews.filter((review) => {
+      // Check direct ID match
+      if (String(review.productId) === targetId) return true;
+
+      // Check alternative IDs
+      if (
+        review.alternate_product_ids &&
+        Array.isArray(review.alternate_product_ids)
+      ) {
+        if (review.alternate_product_ids.includes(targetId)) return true;
+      }
+
+      // Check alternate_ids
+      if (review.alternate_ids && Array.isArray(review.alternate_ids)) {
+        if (review.alternate_ids.includes(targetId)) return true;
+      }
+
+      return false;
+    });
+  } catch (error) {
+    console.error("Error getting reviews from localStorage:", error);
+    return [];
+  }
+};
+
+export const addProductReview = async (reviewData) => {
+  try {
+    // Validate review data
+    if (!reviewData.productId || !reviewData.rating) {
+      throw new Error("Incomplete review data");
+    }
+
+    // Get user token
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      throw new Error("You must be logged in to leave a review");
+    }
+
+    console.log("Adding review for product ID:", reviewData.productId);
+
+    // Format data for the backend
+    const backendData = {
+      product: reviewData.productId,
+      rating: reviewData.rating,
+      comment: reviewData.comment || "",
+    };
+
+    // Post to the backend
+    const response = await fetch(`${API_URL}/reviews/create/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(backendData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.detail || errorData.error || "Failed to submit review"
+      );
+    }
+
+    // Get the response with the created review
+    const createdReview = await response.json();
+
+    // Format for frontend use
+    const formattedReview = {
+      id: createdReview.id,
+      productId: createdReview.product,
+      userId: createdReview.user,
+      user: createdReview.user_detail?.name || "Anonymous",
+      rating: createdReview.rating,
+      comment: createdReview.comment,
+      createdAt: createdReview.created_at,
+      updatedAt: createdReview.updated_at,
+      avatar: createdReview.user_detail?.avatar || null,
+      isApproved: createdReview.is_approved,
+      isFeatured: createdReview.is_featured,
+      likesCount: createdReview.likes_count,
+    };
+
+    // Also save to localStorage as a backup
+    try {
+      const reviewsData = localStorage.getItem("product_reviews");
+      let reviews = reviewsData ? JSON.parse(reviewsData) : [];
+
+      // Remove any existing review by this user for this product
+      reviews = reviews.filter(
+        (review) =>
+          !(
+            String(review.productId) === String(reviewData.productId) &&
+            String(review.userId) === String(reviewData.userId)
+          )
+      );
+
+      // Add the new review
+      reviews.push(formattedReview);
+      localStorage.setItem("product_reviews", JSON.stringify(reviews));
+    } catch (err) {
+      console.error("Error saving review to localStorage:", err);
+    }
+
+    return formattedReview;
+  } catch (error) {
+    console.error("Error adding product review:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update an existing product review
+ * @param {string} reviewId - ID of the review to update
+ * @param {Object} reviewData - The updated review data
+ * @returns {Promise<Object>} The updated review
+ */
+export const updateProductReview = async (reviewId, reviewData) => {
+  try {
+    // Validasi data review
+    if (!reviewId || !reviewData.rating) {
+      throw new Error("Data review tidak lengkap");
+    }
+
+    // Dapatkan token autentikasi
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      throw new Error("Anda harus login untuk mengubah review");
+    }
+
+    console.log("Updating review with ID:", reviewId);
+
+    // Format data untuk backend
+    const backendData = {
+      product: reviewData.productId,
+      rating: reviewData.rating,
+      comment: reviewData.comment || "",
+    };
+
+    console.log("Sending update review data:", backendData);
+
+    // Hapus dulu review yang sudah ada jika perlu
+    try {
+      console.log("Deleting existing review first to handle update issues");
+      const deleteResponse = await fetch(`${API_URL}/reviews/${reviewId}/`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!deleteResponse.ok) {
+        console.log(`Failed to delete old review: ${deleteResponse.status}. Will try direct creation.`);
+      } else {
+        console.log("Successfully deleted old review, creating new one");
+      }
+    } catch (deleteError) {
+      console.log("Error during delete operation:", deleteError);
+      // Lanjutkan meskipun gagal delete
+    }
+    
+    // Langsung create review baru
+    try {
+      const createResponse = await fetch(`${API_URL}/reviews/create/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(backendData),
+      });
+      
+      if (!createResponse.ok) {
+        const createErrorText = await createResponse.text();
+        console.error("Error creating review:", createErrorText);
+        throw new Error(`Gagal membuat review: ${createResponse.status}`);
+      }
+      
+      // Baca response dari create operation
+      const responseText = await createResponse.text();
+      console.log("Create review response text:", responseText);
+      
+      // Parse sebagai JSON
+      let updatedReview;
+      try {
+        updatedReview = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error("Error parsing create response:", parseError);
+        throw new Error("Format respons tidak valid");
+      }
+
+      // Format untuk frontend
+      const formattedReview = {
+        id: updatedReview.id,
+        productId: updatedReview.product,
+        userId: updatedReview.user,
+        user: updatedReview.user_detail?.name || "Anonymous",
+        rating: updatedReview.rating,
+        comment: updatedReview.comment,
+        createdAt: updatedReview.created_at,
+        updatedAt: updatedReview.updated_at,
+        avatar: updatedReview.user_detail?.avatar || null,
+        isApproved: updatedReview.is_approved,
+        isFeatured: updatedReview.is_featured,
+        likesCount: updatedReview.likes_count,
+      };
+
+      // Simpan ke localStorage
+      try {
+        const reviewsData = localStorage.getItem("product_reviews");
+        let reviews = reviewsData ? JSON.parse(reviewsData) : [];
+
+        // Cari indeks review yang akan diupdate
+        const reviewIndex = reviews.findIndex(
+          (review) => String(review.id) === String(reviewId)
+        );
+
+        // Update jika ditemukan, tambahkan jika tidak
+        if (reviewIndex !== -1) {
+          reviews[reviewIndex] = { ...reviews[reviewIndex], ...formattedReview };
+        } else {
+          reviews.push(formattedReview);
+        }
+
+        localStorage.setItem("product_reviews", JSON.stringify(reviews));
+      } catch (err) {
+        console.error("Error saving updated review to localStorage:", err);
+      }
+
+      return formattedReview;
+    } catch (createError) {
+      console.error("Error creating new review:", createError);
+      throw createError;
+    }
+  } catch (error) {
+    console.error("Error updating product review:", error);
+    throw error;
+  }
+};
+
+export const createTestOrders = async (token) => {
+  try {
+    if (!token) {
+      throw new Error("Token tidak ditemukan");
+    }
+
+    const response = await fetch(`${API_URL}/orders/create-test-orders/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Log for debugging
+    console.log("Create test orders response status:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Error response:", errorText);
+      let errorMessage = "Gagal membuat pesanan test";
+
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.error || errorData.detail || errorMessage;
+      } catch (e) {
+        // If not JSON, use the raw text
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error creating test orders:", error);
+    throw error;
+  }
+};
+
+// Helper function to process completed orders and extract unique products
+const processCompletedOrdersForProducts = (orders) => {
+  // Ekstrak semua produk yang telah dibeli
+  const purchasedProducts = [];
+  const productIds = new Set();
+
+  orders.forEach((order) => {
+    if (order.items && Array.isArray(order.items)) {
+      order.items.forEach((item) => {
+        if (item.product && !productIds.has(item.product.id)) {
+          productIds.add(item.product.id);
+
+          // Process image URLs before adding to list
+          let image = item.product.image_url || item.product.image;
+          if (image) {
+            image = processImageUrl(image);
+          }
+
+          purchasedProducts.push({
+            id: item.product.id,
+            name: item.product.name,
+            title: item.product.name,
+            price: item.price,
+            image: image,
+            image_url: image,
+            size: item.size,
+            quantity: item.quantity,
+            product_id: item.product.id,
+          });
+        }
+      });
+    }
+  });
+
+  console.log("Processed purchased products from orders:", purchasedProducts);
+  return purchasedProducts;
+};

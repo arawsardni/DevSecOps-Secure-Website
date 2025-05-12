@@ -4,9 +4,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
 from django.db import transaction
-from django.db.models import Sum, Count, F
+from django.db.models import Sum, Count, F, Avg, ExpressionWrapper, DecimalField, Case, When, Value, Q
+from django.db.models.functions import TruncMonth, TruncDay
 from django.utils import timezone
-from datetime import timedelta
+from django.utils.timezone import timedelta
+from django.shortcuts import get_object_or_404
 from cart.models import Cart
 from product.models import Product
 from .models import Order, OrderItem, OrderPayment, OrderTracking
@@ -14,6 +16,10 @@ from .serializers import (
     OrderListSerializer, OrderDetailSerializer, CreateOrderSerializer,
     OrderPaymentSerializer, OrderTrackingSerializer
 )
+import logging
+from django.core.exceptions import ObjectDoesNotExist
+
+logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -129,10 +135,37 @@ def process_payment(request, order_id):
         # Untuk simulasi, kita langsung update status pembayaran
         payment = order.payment
         payment.is_paid = True
+        
+        # If amount is provided in the request data, handle it properly
+        if 'amount' in request.data:
+            try:
+                # Convert to float first if it's a string, then to Decimal
+                payment_amount = request.data.get('amount')
+                if isinstance(payment_amount, str):
+                    payment_amount = float(payment_amount)
+                # Make sure it's converted to Decimal before saving
+                payment.amount = payment_amount
+            except (ValueError, TypeError):
+                # If conversion fails, use the original order amount
+                payment.amount = order.total_amount
+        
         payment.transaction_id = f"TRX-{uuid.uuid4().hex[:8].upper()}"
         payment.save()
         
+        # Jika status disediakan dalam request, update status pesanan
+        if 'status' in request.data and request.data['status'] in dict(Order.STATUS_CHOICES):
+            order.status = request.data['status']
+            # Jika status adalah 'completed', panggil metode khusus
+            if order.status == 'completed':
+                order.mark_as_completed()
+            else:
+                order.save()
+        # Jika tidak, cukup pastikan status berubah menjadi 'processing' setelah pembayaran
+        else:
         # Order akan otomatis diupdate ke status 'paid' oleh save method di OrderPayment
+            # Tetapi kita perlu juga update status order menjadi 'processing' atau 'completed'
+            order.status = 'completed'  # Ubah status menjadi completed saat pembayaran berhasil
+            order.mark_as_completed()
         
         # Tambahkan tracking
         OrderTracking.objects.create(
@@ -339,4 +372,238 @@ def top_products_report(request):
         total_revenue=Sum(F('price') * F('quantity'))
     ).order_by('-total_quantity')[:limit]
     
-    return Response(top_products) 
+    return Response(top_products)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_completed_orders(request, user_id):
+    try:
+        # Pastikan user hanya bisa melihat pesanannya sendiri
+        if request.user.id != user_id:
+            return Response({'error': 'Tidak diizinkan melihat pesanan user lain'}, 
+                          status=status.HTTP_403_FORBIDDEN)
+        
+        # Ambil semua pesanan yang sudah selesai
+        orders = Order.objects.filter(
+            user_id=user_id,
+            status='completed'
+        ).prefetch_related(
+            'items',
+            'items__product'
+        ).order_by('-created_at')
+
+        # Serialize data pesanan dengan OrderDetailSerializer
+        serializer = OrderDetailSerializer(orders, many=True)
+        return Response(serializer.data)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_order_by_number(request, order_number):
+    """
+    Mendapatkan detail pesanan berdasarkan nomor pesanan
+    """
+    try:
+        # For authenticated users, find their order with the specified order number
+        order = Order.objects.get(order_number=order_number, user=request.user)
+        serializer = OrderDetailSerializer(order)
+        return Response(serializer.data)
+    except Order.DoesNotExist:
+        return Response(
+            {'error': f'Pesanan dengan nomor {order_number} tidak ditemukan'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        # Add general exception handler for debugging
+        return Response(
+            {'error': f'Error retrieving order: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_purchased_products(request, user_id):
+    """
+    Mengembalikan daftar produk unik yang pernah dibeli user.
+    Digunakan untuk fitur review produk.
+    Produk yang sama hanya muncul sekali meskipun dibeli beberapa kali.
+    """
+    try:
+        # Pastikan user hanya bisa melihat produk yang pernah dia beli
+        if request.user.id != user_id:
+            return Response({'error': 'Tidak diizinkan melihat riwayat pembelian user lain'}, 
+                          status=status.HTTP_403_FORBIDDEN)
+        
+        # Ambil semua item dari pesanan yang sudah selesai
+        order_items = OrderItem.objects.filter(
+            order__user_id=user_id,
+            # order__status='completed',
+            order__payment_status='paid'
+        ).select_related(
+            'product', 
+            'order'
+        ).prefetch_related(
+            'product__category'
+        ).order_by('-order__created_at')  # Order by most recent orders first
+        
+        # Gunakan dict untuk menyimpan produk unik
+        processed_products = {}
+        
+        # Debugging info
+        print(f"Found {order_items.count()} order items for user {user_id}")
+        
+        # Ambil produk unik dari order items
+        for item in order_items:
+            product_id = str(item.product.id)
+            
+            # Periksa apakah ini order test
+            is_test_order = item.order.order_number.startswith('TST')
+            
+            # Jika produk sudah ada dalam dictionary dan ada dari NON-test order, 
+            # prioritaskan yang non-test (JANGAN SKIP!)
+            if product_id in processed_products:
+                existing_is_test = processed_products[product_id].get('is_test_order', False)
+                
+                # Jika item baru adalah non-test dan yang sudah ada adalah test, ganti dengan yang non-test
+                if existing_is_test and not is_test_order:
+                    # Ganti dengan yang non-test
+                    pass
+                elif not existing_is_test and is_test_order:
+                    # Skip item test jika sudah ada yang non-test
+                    continue
+            
+            # Format data produk dengan informasi lebih lengkap
+            product_obj = item.product
+            product_data = {
+                'id': product_id,
+                'product_id': product_id,  # Duplikasi untuk compatibility dengan frontend
+                'name': product_obj.name,
+                'title': product_obj.name,  # Duplikasi untuk compatibility dengan frontend
+                'description': product_obj.description,
+                'price': float(product_obj.price),
+                'category': product_obj.category.name if product_obj.category else None,
+                'category_id': product_obj.category.id if product_obj.category else None,
+                'image': product_obj.image.url if product_obj.image else None,
+                'image_url': product_obj.image.url if product_obj.image else None,
+                'size': item.size,
+                'is_test_order': is_test_order,
+                'order_number': item.order.order_number,
+                'first_purchased_at': item.order.created_at,
+                'last_purchased_at': item.order.completed_at or item.order.created_at
+            }
+            
+            # Selalu tambahkan ke dictionary (baik test maupun non-test)
+            processed_products[product_id] = product_data
+        
+        # Convert dict to list, sorted by most recently purchased first
+        unique_products = list(processed_products.values())
+        unique_products.sort(key=lambda x: x['first_purchased_at'], reverse=True)
+        
+        # Filter out internal fields before returning
+        for product in unique_products:
+            if 'is_test_order' in product:
+                del product['is_test_order']
+                
+        print(f"Returning {len(unique_products)} unique purchased products for user {user_id}")
+        # Debug informasi produk
+        for prod in unique_products:
+            print(f"Product: {prod['name']}, Order: {prod['order_number']}")
+            
+        return Response(unique_products)
+
+    except Exception as e:
+        print(f"Error in user_purchased_products: {str(e)}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_test_orders(request):
+    """
+    Create test orders for the current user to test the product reviews feature.
+    This is ONLY for testing purposes.
+    """
+    try:
+        user = request.user
+        
+        # Get some products
+        products = Product.objects.all()[:5]
+        if not products:
+            return Response({'error': 'No products found to create test orders'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        num_orders = 2
+        created_orders = []
+        
+        for i in range(num_orders):
+            # Create a new completed order
+            order = Order.objects.create(
+                user=user,
+                order_number=f"TST{i+10000}",
+                total_amount=100000.00,
+                status='completed',
+                payment_status='paid',
+                delivery_method='pickup',
+                pickup_location='Test Store',
+                completed_at=timezone.now() - timedelta(days=i+1)
+            )
+            
+            # Add items to the order
+            for j, product in enumerate(products[:3]):
+                # Create order item
+                item = OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=1,
+                    price=product.price or 10000.00
+                )
+            
+            created_orders.append(order.order_number)
+        
+        return Response({
+            'message': f'Created {num_orders} test orders with products for reviews',
+            'orders': created_orders
+        })
+
+    except Exception as e:
+        print(f"Error creating test orders: {str(e)}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_order_payment(request, order_id):
+    """
+    Mendapatkan detail pembayaran dari pesanan
+    """
+    try:
+        # Cek jika user yang login sama dengan pemilik pesanan
+        # atau user adalah admin
+        order = Order.objects.get(id=order_id)
+        if request.user != order.user and not request.user.is_staff:
+            return Response(
+                {'error': 'Anda tidak memiliki akses ke pesanan ini'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Ambil data pembayaran
+        try:
+            payment = OrderPayment.objects.get(order_id=order_id)
+            serializer = OrderPaymentSerializer(payment)
+            return Response(serializer.data)
+        except OrderPayment.DoesNotExist:
+            return Response(
+                {'error': 'Detail pembayaran tidak ditemukan'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+    except Order.DoesNotExist:
+        return Response(
+            {'error': 'Pesanan tidak ditemukan'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        ) 

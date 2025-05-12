@@ -1,0 +1,87 @@
+services:
+  backend:
+    build:
+      context: ./Back-End/djangocoffee_backend
+      dockerfile: Dockerfile
+    container_name: django_backend
+    command: >
+      bash -c "
+        python manage.py migrate --no-input &&
+        python manage.py collectstatic --no-input &&
+        gunicorn djangocoffee_backend.wsgi:application --bind 0.0.0.0:8000
+      "
+    volumes:
+      - static_volume:/usr/src/djangocoffee_backend/staticfiles
+      - media_volume:/usr/src/djangocoffee_backend/media
+    expose:
+      - 8000
+    env_file:
+      - ./Back-End/.env.prod
+    environment:
+      - DJANGO_ALLOWED_HOSTS=10.34.100.143 10.34.100.143:8000 10.34.100.143:3000 backend frontend
+    depends_on:
+      - db
+    networks:
+      - app-network
+    restart: always
+
+  frontend:
+    build:
+      context: ./Front-End
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://backend:8000/api
+        - NEXT_PUBLIC_BROWSER_API_URL=http://10.34.100.143:8000/api
+        - NODE_ENV=production
+    container_name: nextjs_frontend
+    expose:
+      - 3000
+    depends_on:
+      - backend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000/api
+      - NEXT_PUBLIC_BROWSER_API_URL=http://10.34.100.143:8000/api
+      - NODE_ENV=production
+    networks:
+      - app-network
+    restart: always
+
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=postgresuser
+      - POSTGRES_PASSWORD=changeme_to_a_strong_password_in_production
+      - POSTGRES_DB=djangocoffee
+    networks:
+      - app-network
+    restart: always
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - static_volume:/home/app/staticfiles
+      - media_volume:/home/app/media
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
